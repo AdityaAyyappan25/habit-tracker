@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Dashboard View (Current Month) -->
+    <div id="dashboard-view" class="view">
+        <div class="habit-card">
+            <div class="habit-header">
+                <span class="habit-name">Exercise</span>
+                <button id="view-year-btn" class="view-btn">View Year</button>
+            </div>
+            <div id="days-grid" class="days-grid">
+                <!-- JavaScript will generate day circles here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Year View (Full Year) -->
+    <div id="year-view" class="view hidden">
+        <div class="year-header">
+            <div class="year-title-row">
+                <button id="back-btn" class="view-btn">← Back</button>
+                <span class="year-habit-name">Exercise</span>
+                <div class="spacer"></div>
+            </div>
+            <div class="year-controls">
+                <button id="prev-year-btn" class="arrow-btn">‹</button>
+                <span id="year-display">2025</span>
+                <button id="next-year-btn" class="arrow-btn">›</button>
+            </div>
+        </div>
+        <div id="year-grid" class="year-grid">
+            <!-- JavaScript will generate month columns here -->
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
