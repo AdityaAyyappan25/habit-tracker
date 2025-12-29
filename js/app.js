@@ -168,6 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
     backBtn.addEventListener('click', function () {
         yearView.classList.add('hidden');
         dashboardView.classList.remove('hidden');
+        renderDashboard();
     });
 
     prevYearBtn.addEventListener('click', function () {
