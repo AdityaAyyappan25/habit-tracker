@@ -12,13 +12,63 @@
 <body>
     <!-- Dashboard View (Current Month) -->
     <div id="dashboard-view" class="view">
-        <div class="habit-card">
-            <div class="habit-header">
-                <span class="habit-name">Exercise</span>
-                <button id="view-year-btn" class="view-btn">View Year</button>
-            </div>
-            <div id="days-grid" class="days-grid">
-                <!-- JavaScript will generate day circles here -->
+        <div class="dashboard-header">
+            <h1 class="app-title">Habit Tracker</h1>
+            <button id="add-habit-btn" class="add-btn">+ Add Habit</button>
+        </div>
+
+        <div id="habits-container">
+            <!-- JavaScript will generate habit cards here -->
+        </div>
+
+        <!-- Add Habit Modal -->
+        <div id="add-habit-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>New Habit</h2>
+
+                <label class="input-label">Habit Name</label>
+                <input type="text" id="habit-name-input" placeholder="Enter habit name..." maxlength="30">
+
+                <label class="input-label">Goal</label>
+                <div class="goal-options">
+                    <label class="radio-option">
+                        <input type="radio" name="goal-type" value="daily" checked>
+                        <span>Daily</span>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="goal-type" value="weekly">
+                        <span>Times per week</span>
+                        <select id="weekly-value" class="goal-select">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3" selected>3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                        </select>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="goal-type" value="everyXDays">
+                        <span>Once every</span>
+                        <select id="every-x-days-value" class="goal-select">
+                            <option value="2" selected>2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                        </select>
+                        <span>days</span>
+                    </label>
+                </div>
+
+                <div class="modal-buttons">
+                    <button id="cancel-habit-btn" class="modal-btn cancel-btn">Cancel</button>
+                    <button id="save-habit-btn" class="modal-btn save-btn">Save</button>
+                </div>
             </div>
         </div>
     </div>

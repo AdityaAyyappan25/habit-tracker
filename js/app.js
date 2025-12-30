@@ -1,37 +1,51 @@
 document.addEventListener('DOMContentLoaded', function () {
 
     // ============ STATE ============
-    // This object holds all our app data
     const state = {
         currentViewingYear: new Date().getFullYear(),
-        habit: {
-            name: 'Exercise',
-            completedDates: {}  // Will be loaded from localStorage
-        }
+        currentHabitId: null,
+        habits: []
     };
 
     // ============ STORAGE FUNCTIONS ============
 
     function saveData() {
-        localStorage.setItem('habitTrackerData', JSON.stringify(state.habit.completedDates));
+        localStorage.setItem('habitTrackerData', JSON.stringify(state.habits));
     }
 
     function loadData() {
         const saved = localStorage.getItem('habitTrackerData');
         if (saved) {
-            state.habit.completedDates = JSON.parse(saved);
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+                // Add default goal to old habits that don't have it
+                state.habits = parsed.map(function (habit) {
+                    if (!habit.goal) {
+                        habit.goal = { type: 'daily', value: 1 };
+                    }
+                    return habit;
+                });
+            } else {
+                state.habits = [];
+            }
         }
     }
 
     // ============ HELPER FUNCTIONS ============
+
     const clickSound = new Audio('assets/sounds/click.mp3');
+
     function playSound() {
         clickSound.currentTime = 0;
         clickSound.volume = 0.5;
         clickSound.play();
     }
+
+    function generateId() {
+        return Date.now().toString();
+    }
+
     function formatDate(year, month, day) {
-        // Creates a string like "2025-01-15"
         const m = String(month + 1).padStart(2, '0');
         const d = String(day).padStart(2, '0');
         return year + '-' + m + '-' + d;
@@ -45,27 +59,251 @@ document.addEventListener('DOMContentLoaded', function () {
         return day > todayDate;
     }
 
-    function toggleDate(dateString) {
-        if (state.habit.completedDates[dateString]) {
-            delete state.habit.completedDates[dateString];
+    function getHabitById(habitId) {
+        return state.habits.find(function (habit) {
+            return habit.id === habitId;
+        });
+    }
+
+    function toggleDate(habitId, dateString) {
+        const habit = getHabitById(habitId);
+        if (!habit) return;
+
+        if (habit.completedDates[dateString]) {
+            delete habit.completedDates[dateString];
         } else {
-            state.habit.completedDates[dateString] = true;
+            habit.completedDates[dateString] = true;
         }
         saveData();
         playSound();
     }
 
+    function calculateStreak(habit) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const goalType = habit.goal ? habit.goal.type : 'daily';
+        const goalValue = habit.goal ? habit.goal.value : 1;
+
+        if (goalType === 'daily') {
+            return calculateDailyStreak(habit, today);
+        } else if (goalType === 'weekly') {
+            return calculateWeeklyStreak(habit, today, goalValue);
+        } else if (goalType === 'everyXDays') {
+            return calculateEveryXDaysStreak(habit, today, goalValue);
+        }
+
+        return 0;
+    }
+
+    function calculateDailyStreak(habit, today) {
+        let streak = 0;
+        let checkDate = new Date(today);
+
+        const todayString = formatDate(
+            checkDate.getFullYear(),
+            checkDate.getMonth(),
+            checkDate.getDate()
+        );
+
+        if (!habit.completedDates[todayString]) {
+            checkDate.setDate(checkDate.getDate() - 1);
+        }
+
+        while (true) {
+            const dateString = formatDate(
+                checkDate.getFullYear(),
+                checkDate.getMonth(),
+                checkDate.getDate()
+            );
+
+            if (habit.completedDates[dateString]) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    }
+
+    function calculateWeeklyStreak(habit, today, targetPerWeek) {
+        let streak = 0;
+
+        // Get start of current week (Sunday)
+        const currentWeekStart = new Date(today);
+        currentWeekStart.setDate(today.getDate() - today.getDay());
+        currentWeekStart.setHours(0, 0, 0, 0);
+
+        let weekStart = new Date(currentWeekStart);
+
+        // First, check current week
+        let completionsThisWeek = countCompletionsInWeek(habit, weekStart);
+
+        // If current week has progress, count it and move to previous week
+        if (completionsThisWeek > 0) {
+            streak++;
+            weekStart.setDate(weekStart.getDate() - 7);
+        } else {
+            // No progress this week - start checking from last week
+            weekStart.setDate(weekStart.getDate() - 7);
+        }
+
+        // Now check previous weeks - must meet goal
+        while (true) {
+            completionsThisWeek = countCompletionsInWeek(habit, weekStart);
+
+            if (completionsThisWeek >= targetPerWeek) {
+                streak++;
+                weekStart.setDate(weekStart.getDate() - 7);
+            } else {
+                break;
+            }
+
+            // Safety limit
+            if (streak > 52) break;
+        }
+
+        return streak;
+    }
+
+    function countCompletionsInWeek(habit, weekStart) {
+        let count = 0;
+
+        for (let i = 0; i < 7; i++) {
+            const checkDate = new Date(weekStart);
+            checkDate.setDate(weekStart.getDate() + i);
+
+            const dateString = formatDate(
+                checkDate.getFullYear(),
+                checkDate.getMonth(),
+                checkDate.getDate()
+            );
+
+            if (habit.completedDates[dateString]) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    function calculateEveryXDaysStreak(habit, today, everyXDays) {
+        // Get all completed dates, sorted newest to oldest
+        const completedDates = Object.keys(habit.completedDates).sort().reverse();
+
+        if (completedDates.length === 0) {
+            return 0;
+        }
+
+        // Check if most recent completion is within allowed gap from today
+        const mostRecent = new Date(completedDates[0]);
+        const todayDate = new Date(today);
+        const daysSinceLast = Math.floor((todayDate - mostRecent) / (1000 * 60 * 60 * 24));
+
+        if (daysSinceLast > everyXDays) {
+            return 0; // Streak broken - too long since last completion
+        }
+
+        // Count streak by checking gaps between consecutive completions
+        let streak = 1; // Count the most recent one
+
+        for (let i = 0; i < completedDates.length - 1; i++) {
+            const current = new Date(completedDates[i]);
+            const previous = new Date(completedDates[i + 1]);
+
+            const gap = Math.floor((current - previous) / (1000 * 60 * 60 * 24));
+
+            if (gap <= everyXDays) {
+                streak++;
+            } else {
+                break; // Gap too large, streak ends
+            }
+        }
+
+        return streak;
+    }
+
+    function calculateTotalDays(habit) {
+        return Object.keys(habit.completedDates).length;
+    }
+
     // ============ RENDER FUNCTIONS ============
 
     function renderDashboard() {
-        const grid = document.getElementById('days-grid');
-        grid.innerHTML = '';
+        const container = document.getElementById('habits-container');
+        container.innerHTML = '';
+
+        // Empty state
+        if (state.habits.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.innerHTML = '<p>No habits yet</p><span>Click "+ Add Habit" to get started</span>';
+            container.appendChild(emptyState);
+            return;
+        }
+
+        // Render each habit card
+        state.habits.forEach(function (habit) {
+            const card = createHabitCard(habit);
+            container.appendChild(card);
+        });
+    }
+
+    function createHabitCard(habit) {
+        const card = document.createElement('div');
+        card.className = 'habit-card';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'habit-header';
+
+        const nameContainer = document.createElement('div');
+        nameContainer.className = 'habit-name-container';
+
+        const name = document.createElement('span');
+        name.className = 'habit-name';
+        name.textContent = habit.name;
+        name.style.cursor = 'pointer';
+        name.addEventListener('click', function () {
+            openYearView(habit.id);
+        });
+
+        const stats = document.createElement('div');
+        stats.className = 'habit-stats';
+
+        const streak = calculateStreak(habit);
+        const isStreakActive = streak > 0;
+
+        const bulbSVG = `<svg class="bulb ${isStreakActive ? 'on' : 'off'}" viewBox="0 0 24 24" fill="${isStreakActive ? '#e8b923' : '#555'}">
+            <path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/>
+        </svg>`;
+
+        stats.innerHTML = '<span class="streak-icon">' + bulbSVG + '<span class="streak-count ' + (isStreakActive ? '' : 'off') + '">' + streak + ' day streak</span></span> · <span class="total">' + calculateTotalDays(habit) + ' total</span>';
+
+        nameContainer.appendChild(name);
+        nameContainer.appendChild(stats);
+
+        const viewYearBtn = document.createElement('button');
+        viewYearBtn.className = 'view-btn';
+        viewYearBtn.textContent = 'View Year';
+        viewYearBtn.addEventListener('click', function () {
+            openYearView(habit.id);
+        });
+
+        header.appendChild(nameContainer);
+        header.appendChild(viewYearBtn);
+        card.appendChild(header);
+
+        // Days grid
+        const grid = document.createElement('div');
+        grid.className = 'days-grid';
 
         const today = new Date();
         const currentYear = today.getFullYear();
         const currentMonth = today.getMonth();
         const todayDate = today.getDate();
-
         const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -73,11 +311,9 @@ document.addEventListener('DOMContentLoaded', function () {
             dayElement.className = 'day';
             dayElement.textContent = day;
 
-            // Create date string for this day
             const dateString = formatDate(currentYear, currentMonth, day);
 
-            // Check if this day is completed
-            if (state.habit.completedDates[dateString]) {
+            if (habit.completedDates[dateString]) {
                 dayElement.classList.add('lit');
             }
 
@@ -85,16 +321,63 @@ document.addEventListener('DOMContentLoaded', function () {
                 dayElement.classList.add('disabled');
             } else {
                 dayElement.addEventListener('click', function () {
-                    toggleDate(dateString);
+                    toggleDate(habit.id, dateString);
                     dayElement.classList.toggle('lit');
+                    updateHabitStats(habit.id);
                 });
             }
 
             grid.appendChild(dayElement);
         }
+
+        card.appendChild(grid);
+
+        // Store habit ID on the card for reference
+        card.dataset.habitId = habit.id;
+
+        return card;
+    }
+
+    function updateHabitStats(habitId) {
+        const habit = getHabitById(habitId);
+        if (!habit) return;
+
+        const card = document.querySelector('.habit-card[data-habit-id="' + habitId + '"]');
+        if (!card) return;
+
+        const stats = card.querySelector('.habit-stats');
+        if (stats) {
+            const streak = calculateStreak(habit);
+            const isStreakActive = streak > 0;
+
+            const bulbSVG = `<svg class="bulb ${isStreakActive ? 'on' : 'off'}" viewBox="0 0 24 24" fill="${isStreakActive ? '#e8b923' : '#555'}">
+                <path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/>
+            </svg>`;
+
+            stats.innerHTML = '<span class="streak-icon">' + bulbSVG + '<span class="streak-count ' + (isStreakActive ? '' : 'off') + '">' + streak + ' day streak</span></span> · <span class="total">' + calculateTotalDays(habit) + ' total</span>';
+        }
+    }
+
+    function openYearView(habitId) {
+        state.currentHabitId = habitId;
+        state.currentViewingYear = new Date().getFullYear();
+
+        dashboardView.classList.add('hidden');
+        yearView.classList.remove('hidden');
+
+        renderYearView();
     }
 
     function renderYearView() {
+        const habit = getHabitById(state.currentHabitId);
+        if (!habit) return;
+
+        // Update header
+        const yearHabitName = document.querySelector('.year-habit-name');
+        if (yearHabitName) {
+            yearHabitName.textContent = habit.name;
+        }
+
         const yearDisplay = document.getElementById('year-display');
         yearDisplay.textContent = state.currentViewingYear;
 
@@ -127,8 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const dateString = formatDate(state.currentViewingYear, month, day);
 
-                // Check if this day is completed
-                if (state.habit.completedDates[dateString]) {
+                if (habit.completedDates[dateString]) {
                     dayElement.classList.add('lit');
                 }
 
@@ -138,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     dayElement.classList.add('disabled');
                 } else {
                     dayElement.addEventListener('click', function () {
-                        toggleDate(dateString);
+                        toggleDate(habit.id, dateString);
                         dayElement.classList.toggle('lit');
                     });
                 }
@@ -150,21 +432,92 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // ============ MODAL FUNCTIONS ============
+
+    function openModal() {
+        addHabitModal.classList.remove('hidden');
+        habitNameInput.value = '';
+        habitNameInput.focus();
+    }
+
+    function closeModal() {
+        addHabitModal.classList.add('hidden');
+        habitNameInput.value = '';
+        // Reset goal options to default
+        document.querySelector('input[name="goal-type"][value="daily"]').checked = true;
+        document.getElementById('weekly-value').value = '3';
+        document.getElementById('every-x-days-value').value = '2';
+    }
+
+    function saveNewHabit() {
+        const name = habitNameInput.value.trim();
+
+        if (name === '') {
+            habitNameInput.focus();
+            return;
+        }
+
+        // Get selected goal type
+        const goalTypeInput = document.querySelector('input[name="goal-type"]:checked');
+        const goalType = goalTypeInput.value;
+
+        // Get goal value based on type
+        let goalValue = 1;
+        if (goalType === 'weekly') {
+            goalValue = parseInt(document.getElementById('weekly-value').value);
+        } else if (goalType === 'everyXDays') {
+            goalValue = parseInt(document.getElementById('every-x-days-value').value);
+        }
+
+        const newHabit = {
+            id: generateId(),
+            name: name,
+            completedDates: {},
+            goal: {
+                type: goalType,
+                value: goalValue
+            }
+        };
+
+        state.habits.push(newHabit);
+        saveData();
+        closeModal();
+        renderDashboard();
+    }
+
     // ============ EVENT LISTENERS ============
 
     const dashboardView = document.getElementById('dashboard-view');
     const yearView = document.getElementById('year-view');
-    const viewYearBtn = document.getElementById('view-year-btn');
+    const addHabitBtn = document.getElementById('add-habit-btn');
+    const addHabitModal = document.getElementById('add-habit-modal');
+    const habitNameInput = document.getElementById('habit-name-input');
+    const cancelHabitBtn = document.getElementById('cancel-habit-btn');
+    const saveHabitBtn = document.getElementById('save-habit-btn');
     const backBtn = document.getElementById('back-btn');
     const prevYearBtn = document.getElementById('prev-year-btn');
     const nextYearBtn = document.getElementById('next-year-btn');
 
-    viewYearBtn.addEventListener('click', function () {
-        dashboardView.classList.add('hidden');
-        yearView.classList.remove('hidden');
-        renderYearView();
+    // Add Habit Modal
+    addHabitBtn.addEventListener('click', openModal);
+    cancelHabitBtn.addEventListener('click', closeModal);
+    saveHabitBtn.addEventListener('click', saveNewHabit);
+
+    // Allow Enter key to save habit
+    habitNameInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            saveNewHabit();
+        }
     });
 
+    // Close modal when clicking outside
+    addHabitModal.addEventListener('click', function (e) {
+        if (e.target === addHabitModal) {
+            closeModal();
+        }
+    });
+
+    // Year View Navigation
     backBtn.addEventListener('click', function () {
         yearView.classList.add('hidden');
         dashboardView.classList.remove('hidden');
@@ -183,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ============ INITIALIZE APP ============
 
-    loadData();       // Load saved data from localStorage
-    renderDashboard(); // Render the dashboard
+    loadData();
+    renderDashboard();
 
 });

@@ -220,3 +220,251 @@ body {
     border-color: #2a2a2a;
     color: #3a3a3a;
 }
+
+/* Dashboard Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.app-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #e8b923;
+}
+
+.add-btn {
+    background: transparent;
+    border: 1px solid #e8b923;
+    color: #e8b923;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.add-btn:hover {
+    background: #e8b923;
+    color: #0a0a0a;
+}
+
+/* Habits Container */
+#habits-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #555;
+}
+
+.empty-state p {
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.empty-state span {
+    font-size: 14px;
+    color: #444;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: #141414;
+    padding: 32px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+}
+
+.modal-content h2 {
+    margin-bottom: 24px;
+    color: #f5f5f5;
+    font-size: 20px;
+}
+
+#habit-name-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #0a0a0a;
+    color: #f5f5f5;
+    font-family: inherit;
+    font-size: 16px;
+    margin-bottom: 24px;
+    box-sizing: border-box;
+}
+
+#habit-name-input:focus {
+    outline: none;
+    border-color: #e8b923;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.cancel-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #888;
+}
+
+.cancel-btn:hover {
+    border-color: #555;
+    color: #f5f5f5;
+}
+
+.save-btn {
+    background: #e8b923;
+    border: 1px solid #e8b923;
+    color: #0a0a0a;
+}
+
+.save-btn:hover {
+    background: #f5d547;
+}
+
+/* Habit Name Container */
+.habit-name-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.habit-name {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.habit-name:hover {
+    color: #e8b923;
+}
+
+.habit-stats {
+    font-size: 14px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.habit-stats .streak {
+    color: #e8b923;
+}
+
+/* Input Labels */
+.input-label {
+    display: block;
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 8px;
+    margin-top: 16px;
+}
+
+/* Goal Options */
+.goal-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f5f5f5;
+    cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+    accent-color: #e8b923;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.goal-select {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #f5f5f5;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 14px;
+    margin-left: 4px;
+}
+
+.goal-select:focus {
+    outline: none;
+    border-color: #e8b923;
+}
+
+/* Bulb Streak Icon */
+.streak-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.bulb {
+    width: 18px;
+    height: 18px;
+    transition: all 0.3s ease;
+}
+
+.bulb.off {
+    opacity: 0.3;
+    filter: grayscale(100%);
+}
+
+.bulb.on {
+    filter: drop-shadow(0 0 4px #e8b923);
+}
+
+.streak-count {
+    color: #e8b923;
+    font-weight: 600;
+}
+
+.streak-count.off {
+    color: #555;
+}
