@@ -190,35 +190,46 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function calculateEveryXDaysStreak(habit, today, everyXDays) {
-        // Get all completed dates, sorted newest to oldest
         const completedDates = Object.keys(habit.completedDates).sort().reverse();
 
         if (completedDates.length === 0) {
             return 0;
         }
 
-        // Check if most recent completion is within allowed gap from today
-        const mostRecent = new Date(completedDates[0]);
-        const todayDate = new Date(today);
-        const daysSinceLast = Math.floor((todayDate - mostRecent) / (1000 * 60 * 60 * 24));
-
-        if (daysSinceLast > everyXDays) {
-            return 0; // Streak broken - too long since last completion
+        // Parse date string safely (avoid timezone issues)
+        function parseDate(dateStr) {
+            const parts = dateStr.split('-');
+            const d = new Date(
+                parseInt(parts[0]),
+                parseInt(parts[1]) - 1,
+                parseInt(parts[2])
+            );
+            d.setHours(0, 0, 0, 0);
+            return d;
         }
 
-        // Count streak by checking gaps between consecutive completions
-        let streak = 1; // Count the most recent one
+        const mostRecent = parseDate(completedDates[0]);
+        const todayDate = new Date(today);
+        todayDate.setHours(0, 0, 0, 0);
+
+        const daysSinceLast = Math.round((todayDate - mostRecent) / (1000 * 60 * 60 * 24));
+
+        if (daysSinceLast > everyXDays) {
+            return 0;
+        }
+
+        let streak = 1;
 
         for (let i = 0; i < completedDates.length - 1; i++) {
-            const current = new Date(completedDates[i]);
-            const previous = new Date(completedDates[i + 1]);
+            const current = parseDate(completedDates[i]);
+            const previous = parseDate(completedDates[i + 1]);
 
-            const gap = Math.floor((current - previous) / (1000 * 60 * 60 * 24));
+            const gap = Math.round((current - previous) / (1000 * 60 * 60 * 24));
 
             if (gap <= everyXDays) {
                 streak++;
             } else {
-                break; // Gap too large, streak ends
+                break;
             }
         }
 
@@ -229,6 +240,132 @@ document.addEventListener('DOMContentLoaded', function () {
         return Object.keys(habit.completedDates).length;
     }
 
+    function getStreakLabel(habit, streakCount) {
+        const goalType = habit.goal ? habit.goal.type : 'daily';
+
+        if (goalType === 'weekly') {
+            // Check if on track this week
+            const status = getWeeklyStatus(habit);
+            if (status.overdue) {
+                return status.text;
+            }
+            return streakCount + (streakCount === 1 ? ' week streak' : ' weeks streak');
+        } else if (goalType === 'everyXDays') {
+            const status = getEveryXDaysStatus(habit);
+            return status.text;
+        } else {
+            // Daily - check if done today
+            const status = getDailyStatus(habit);
+            if (status.overdue) {
+                return status.text;
+            }
+            return streakCount + (streakCount === 1 ? ' day streak' : ' days streak');
+        }
+    }
+
+    function getEveryXDaysStatus(habit) {
+        const everyXDays = habit.goal.value;
+        const completedDates = Object.keys(habit.completedDates).sort().reverse();
+
+        if (completedDates.length === 0) {
+            return { text: 'Due today' };
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Parse the date string manually to avoid timezone issues
+        const lastDateStr = completedDates[0];
+        const parts = lastDateStr.split('-');
+        const lastCompletion = new Date(
+            parseInt(parts[0]),      // year
+            parseInt(parts[1]) - 1,  // month (0-indexed)
+            parseInt(parts[2])       // day
+        );
+        lastCompletion.setHours(0, 0, 0, 0);
+
+        const daysSinceLast = Math.round((today - lastCompletion) / (1000 * 60 * 60 * 24));
+
+        if (daysSinceLast === 0) {
+            return { text: 'Done · due in ' + everyXDays + ' days' };
+        } else if (daysSinceLast < everyXDays) {
+            const daysUntilDue = everyXDays - daysSinceLast;
+            return { text: 'Due in ' + daysUntilDue + (daysUntilDue === 1 ? ' day' : ' days') };
+        } else if (daysSinceLast === everyXDays) {
+            return { text: 'Due today' };
+        } else {
+            const daysOverdue = daysSinceLast - everyXDays;
+            return { text: 'Overdue by ' + daysOverdue + (daysOverdue === 1 ? ' day' : ' days') };
+        }
+    }
+    function getDailyStatus(habit) {
+        const today = new Date();
+        const todayString = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+
+        if (habit.completedDates[todayString]) {
+            return { overdue: false };
+        } else {
+            return { overdue: true, text: 'Due today' };
+        }
+    }
+
+    function getWeeklyStatus(habit) {
+        const targetPerWeek = habit.goal.value;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Get start of current week (Sunday)
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+
+        // Count completions this week
+        let completionsThisWeek = 0;
+        for (let i = 0; i < 7; i++) {
+            const checkDate = new Date(weekStart);
+            checkDate.setDate(weekStart.getDate() + i);
+
+            // Don't count future days
+            if (checkDate > today) break;
+
+            const dateString = formatDate(
+                checkDate.getFullYear(),
+                checkDate.getMonth(),
+                checkDate.getDate()
+            );
+
+            if (habit.completedDates[dateString]) {
+                completionsThisWeek++;
+            }
+        }
+
+        // Days left in week (including today)
+        const dayOfWeek = today.getDay(); // 0 = Sunday
+        const daysLeftInWeek = 7 - dayOfWeek;
+
+        const remaining = targetPerWeek - completionsThisWeek;
+
+        if (remaining <= 0) {
+            return { overdue: false };
+        } else if (remaining <= daysLeftInWeek) {
+            return { overdue: false }; // Still achievable
+        } else {
+            return { overdue: true, text: 'Behind this week' };
+        }
+    }
+
+    function getGoalDescription(habit) {
+        const goalType = habit.goal ? habit.goal.type : 'daily';
+        const goalValue = habit.goal ? habit.goal.value : 1;
+
+        if (goalType === 'daily') {
+            return 'Every day';
+        } else if (goalType === 'weekly') {
+            return goalValue + 'x per week';
+        } else if (goalType === 'everyXDays') {
+            return 'Every ' + goalValue + ' days';
+        }
+        return '';
+    }
     // ============ RENDER FUNCTIONS ============
 
     function renderDashboard() {
@@ -269,6 +406,10 @@ document.addEventListener('DOMContentLoaded', function () {
         name.addEventListener('click', function () {
             openYearView(habit.id);
         });
+        // Add goal description
+        const goalDesc = document.createElement('span');
+        goalDesc.className = 'habit-goal-desc';
+        goalDesc.textContent = getGoalDescription(habit);
 
         const stats = document.createElement('div');
         stats.className = 'habit-stats';
@@ -280,9 +421,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/>
         </svg>`;
 
-        stats.innerHTML = '<span class="streak-icon">' + bulbSVG + '<span class="streak-count ' + (isStreakActive ? '' : 'off') + '">' + streak + ' day streak</span></span> · <span class="total">' + calculateTotalDays(habit) + ' total</span>';
+        stats.innerHTML = '<span class="streak-icon">' + bulbSVG + '<span class="streak-count ' + (isStreakActive ? '' : 'off') + '">' + getStreakLabel(habit, streak) + '</span></span> · <span class="total">' + calculateTotalDays(habit) + ' total</span>';
 
         nameContainer.appendChild(name);
+        nameContainer.appendChild(goalDesc);
         nameContainer.appendChild(stats);
 
         const viewYearBtn = document.createElement('button');
@@ -354,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/>
             </svg>`;
 
-            stats.innerHTML = '<span class="streak-icon">' + bulbSVG + '<span class="streak-count ' + (isStreakActive ? '' : 'off') + '">' + streak + ' day streak</span></span> · <span class="total">' + calculateTotalDays(habit) + ' total</span>';
+            stats.innerHTML = '<span class="streak-icon">' + bulbSVG + '<span class="streak-count ' + (isStreakActive ? '' : 'off') + '">' + getStreakLabel(habit, streak) + '</span></span> · <span class="total">' + calculateTotalDays(habit) + ' total</span>';
         }
     }
 

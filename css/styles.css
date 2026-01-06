@@ -468,3 +468,9 @@ body {
 .streak-count.off {
     color: #555;
 }
+
+.habit-goal-desc {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
