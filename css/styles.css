@@ -308,7 +308,8 @@ body {
     font-size: 20px;
 }
 
-#habit-name-input {
+#habit-name-input,
+#edit-habit-name-input {
     width: 100%;
     padding: 12px 16px;
     border: 1px solid #333;
@@ -321,7 +322,8 @@ body {
     box-sizing: border-box;
 }
 
-#habit-name-input:focus {
+#habit-name-input:focus,
+#edit-habit-name-input:focus {
     outline: none;
     border-color: #e8b923;
 }
@@ -473,4 +475,85 @@ body {
     font-size: 12px;
     color: #666;
     margin-bottom: 4px;
+}
+
+/* Action Buttons (Edit/Delete) - Matches the ancient golden aesthetic */
+.action-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #666;
+    font-family: 'Crimson Text', serif;
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    border-color: #e8b923;
+    color: #e8b923;
+}
+
+.danger-btn:hover {
+    border-color: #8b3a3a;
+    color: #c45c5c;
+}
+
+/* Habit card header with actions */
+.habit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.habit-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.habit-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Year view habit info */
+.year-habit-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.year-habit-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Delete Confirmation Modal */
+.modal-warning {
+    color: #c45c5c;
+    font-size: 14px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(196, 92, 92, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(196, 92, 92, 0.2);
+}
+
+.danger-save-btn {
+    background: #8b3a3a;
+    border: 1px solid #8b3a3a;
+    color: #f5f5f5;
+}
+
+.danger-save-btn:hover {
+    background: #c45c5c;
+    border-color: #c45c5c;
 }

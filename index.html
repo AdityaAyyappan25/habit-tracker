@@ -71,6 +71,70 @@
                 </div>
             </div>
         </div>
+        <!-- Edit Habit Modal -->
+        <div id="edit-habit-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Edit Habit</h2>
+
+                <label class="input-label">Habit Name</label>
+                <input type="text" id="edit-habit-name-input" placeholder="Enter habit name..." maxlength="30">
+
+                <label class="input-label">Goal</label>
+                <div class="goal-options">
+                    <label class="radio-option">
+                        <input type="radio" name="edit-goal-type" value="daily">
+                        <span>Daily</span>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="edit-goal-type" value="weekly">
+                        <span>Times per week</span>
+                        <select id="edit-weekly-value" class="goal-select">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                        </select>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="edit-goal-type" value="everyXDays">
+                        <span>Once every</span>
+                        <select id="edit-every-x-days-value" class="goal-select">
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                        </select>
+                        <span>days</span>
+                    </label>
+                </div>
+
+                <div class="modal-buttons">
+                    <button id="cancel-edit-btn" class="modal-btn cancel-btn">Cancel</button>
+                    <button id="save-edit-btn" class="modal-btn save-btn">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-habit-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Delete Habit</h2>
+                <p class="modal-warning">This will permanently delete this habit and all its history. This action cannot
+                    be undone.</p>
+                <p id="delete-habit-name" style="color: #e8b923; margin-bottom: 24px;"></p>
+                <div class="modal-buttons">
+                    <button id="cancel-delete-btn" class="modal-btn cancel-btn">Cancel</button>
+                    <button id="confirm-delete-btn" class="modal-btn danger-save-btn">Delete</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Year View (Full Year) -->
@@ -78,7 +142,13 @@
         <div class="year-header">
             <div class="year-title-row">
                 <button id="back-btn" class="view-btn">← Back</button>
-                <span class="year-habit-name">Exercise</span>
+                <div class="year-habit-info">
+                    <span class="year-habit-name">Exercise</span>
+                    <div class="year-habit-actions">
+                        <button id="year-edit-btn" class="action-btn" title="Edit habit">Edit</button>
+                        <button id="year-delete-btn" class="action-btn danger-btn" title="Delete habit">Delete</button>
+                    </div>
+                </div>
                 <div class="spacer"></div>
             </div>
             <div class="year-controls">

@@ -4,11 +4,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const state = {
         currentViewingYear: new Date().getFullYear(),
         currentHabitId: null,
+        editingHabitId: null,
         habits: []
     };
 
-    // ============ STORAGE FUNCTIONS ============
+    // ============ DOM HELPERS ============
+    const $ = (id) => document.getElementById(id);
+    const $q = (sel) => document.querySelector(sel);
 
+    // ============ STORAGE ============
     function saveData() {
         localStorage.setItem('habitTrackerData', JSON.stringify(state.habits));
     }
@@ -18,22 +22,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (saved) {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed)) {
-                // Add default goal to old habits that don't have it
-                state.habits = parsed.map(function (habit) {
-                    if (!habit.goal) {
-                        habit.goal = { type: 'daily', value: 1 };
-                    }
-                    return habit;
-                });
-            } else {
-                state.habits = [];
+                state.habits = parsed.map(h => h.goal ? h : { ...h, goal: { type: 'daily', value: 1 } });
             }
         }
     }
 
-    // ============ HELPER FUNCTIONS ============
-
+    // ============ HELPERS ============
     const clickSound = new Audio('assets/sounds/click.mp3');
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const MS_PER_DAY = 86400000;
 
     function playSound() {
         clickSound.currentTime = 0;
@@ -41,472 +38,289 @@ document.addEventListener('DOMContentLoaded', function () {
         clickSound.play();
     }
 
-    function generateId() {
-        return Date.now().toString();
-    }
-
     function formatDate(year, month, day) {
-        const m = String(month + 1).padStart(2, '0');
-        const d = String(day).padStart(2, '0');
-        return year + '-' + m + '-' + d;
+        return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
 
-    function isDateInFuture(year, month, day, todayYear, todayMonth, todayDate) {
-        if (year > todayYear) return true;
-        if (year < todayYear) return false;
-        if (month > todayMonth) return true;
-        if (month < todayMonth) return false;
-        return day > todayDate;
+    function parseDate(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        date.setHours(0, 0, 0, 0);
+        return date;
     }
 
-    function getHabitById(habitId) {
-        return state.habits.find(function (habit) {
-            return habit.id === habitId;
-        });
+    function getToday() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return today;
+    }
+
+    function getTodayString() {
+        const t = getToday();
+        return formatDate(t.getFullYear(), t.getMonth(), t.getDate());
+    }
+
+    function isFutureDate(year, month, day) {
+        return new Date(year, month, day) > getToday();
+    }
+
+    function getHabitById(id) {
+        return state.habits.find(h => h.id === id);
     }
 
     function toggleDate(habitId, dateString) {
         const habit = getHabitById(habitId);
         if (!habit) return;
-
-        if (habit.completedDates[dateString]) {
-            delete habit.completedDates[dateString];
-        } else {
-            habit.completedDates[dateString] = true;
-        }
+        habit.completedDates[dateString] ? delete habit.completedDates[dateString] : habit.completedDates[dateString] = true;
         saveData();
         playSound();
     }
 
+    // ============ GOAL HELPERS ============
+    function getGoalDescription(habit) {
+        const { type, value } = habit.goal || { type: 'daily', value: 1 };
+        if (type === 'daily') return 'Every day';
+        if (type === 'weekly') return `${value}x per week`;
+        if (type === 'everyXDays') return `Every ${value} days`;
+        return '';
+    }
+
+    function getGoalFromForm(prefix) {
+        const type = $q(`input[name="${prefix}goal-type"]:checked`)?.value || 'daily';
+        let value = 1;
+        if (type === 'weekly') value = parseInt($(`${prefix}weekly-value`).value);
+        if (type === 'everyXDays') value = parseInt($(`${prefix}every-x-days-value`).value);
+        return { type, value };
+    }
+
+    function setGoalInForm(habit, prefix) {
+        const { type, value } = habit.goal || { type: 'daily', value: 1 };
+        const radio = $q(`input[name="${prefix}goal-type"][value="${type}"]`);
+        if (radio) radio.checked = true;
+        if (type === 'weekly' && $(`${prefix}weekly-value`)) $(`${prefix}weekly-value`).value = value;
+        if (type === 'everyXDays' && $(`${prefix}every-x-days-value`)) $(`${prefix}every-x-days-value`).value = value;
+    }
+
+    function resetGoalForm(prefix) {
+        const radio = $q(`input[name="${prefix}goal-type"][value="daily"]`);
+        if (radio) radio.checked = true;
+        if ($(`${prefix}weekly-value`)) $(`${prefix}weekly-value`).value = '3';
+        if ($(`${prefix}every-x-days-value`)) $(`${prefix}every-x-days-value`).value = '2';
+    }
+
+    // ============ STREAK CALCULATIONS ============
     function calculateStreak(habit) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = getToday();
+        const { type, value } = habit.goal || { type: 'daily', value: 1 };
 
-        const goalType = habit.goal ? habit.goal.type : 'daily';
-        const goalValue = habit.goal ? habit.goal.value : 1;
-
-        if (goalType === 'daily') {
-            return calculateDailyStreak(habit, today);
-        } else if (goalType === 'weekly') {
-            return calculateWeeklyStreak(habit, today, goalValue);
-        } else if (goalType === 'everyXDays') {
-            return calculateEveryXDaysStreak(habit, today, goalValue);
-        }
-
+        if (type === 'daily') return calcDailyStreak(habit, today);
+        if (type === 'weekly') return calcWeeklyStreak(habit, today, value);
+        if (type === 'everyXDays') return calcEveryXStreak(habit, today, value);
         return 0;
     }
 
-    function calculateDailyStreak(habit, today) {
+    function calcDailyStreak(habit, today) {
         let streak = 0;
-        let checkDate = new Date(today);
+        let check = new Date(today);
+        if (!habit.completedDates[getTodayString()]) check.setDate(check.getDate() - 1);
 
-        const todayString = formatDate(
-            checkDate.getFullYear(),
-            checkDate.getMonth(),
-            checkDate.getDate()
-        );
-
-        if (!habit.completedDates[todayString]) {
-            checkDate.setDate(checkDate.getDate() - 1);
-        }
-
-        while (true) {
-            const dateString = formatDate(
-                checkDate.getFullYear(),
-                checkDate.getMonth(),
-                checkDate.getDate()
-            );
-
-            if (habit.completedDates[dateString]) {
-                streak++;
-                checkDate.setDate(checkDate.getDate() - 1);
-            } else {
-                break;
-            }
-        }
-
-        return streak;
-    }
-
-    function calculateWeeklyStreak(habit, today, targetPerWeek) {
-        let streak = 0;
-
-        // Get start of current week (Sunday)
-        const currentWeekStart = new Date(today);
-        currentWeekStart.setDate(today.getDate() - today.getDay());
-        currentWeekStart.setHours(0, 0, 0, 0);
-
-        let weekStart = new Date(currentWeekStart);
-
-        // First, check current week
-        let completionsThisWeek = countCompletionsInWeek(habit, weekStart);
-
-        // If current week has progress, count it and move to previous week
-        if (completionsThisWeek > 0) {
+        while (habit.completedDates[formatDate(check.getFullYear(), check.getMonth(), check.getDate())]) {
             streak++;
-            weekStart.setDate(weekStart.getDate() - 7);
-        } else {
-            // No progress this week - start checking from last week
-            weekStart.setDate(weekStart.getDate() - 7);
+            check.setDate(check.getDate() - 1);
         }
-
-        // Now check previous weeks - must meet goal
-        while (true) {
-            completionsThisWeek = countCompletionsInWeek(habit, weekStart);
-
-            if (completionsThisWeek >= targetPerWeek) {
-                streak++;
-                weekStart.setDate(weekStart.getDate() - 7);
-            } else {
-                break;
-            }
-
-            // Safety limit
-            if (streak > 52) break;
-        }
-
         return streak;
     }
 
-    function countCompletionsInWeek(habit, weekStart) {
-        let count = 0;
+    function calcWeeklyStreak(habit, today, target) {
+        let streak = 0;
+        let weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        weekStart.setHours(0, 0, 0, 0);
 
-        for (let i = 0; i < 7; i++) {
-            const checkDate = new Date(weekStart);
-            checkDate.setDate(weekStart.getDate() + i);
+        let count = countWeekCompletions(habit, weekStart);
+        if (count > 0) { streak++; weekStart.setDate(weekStart.getDate() - 7); }
+        else { weekStart.setDate(weekStart.getDate() - 7); }
 
-            const dateString = formatDate(
-                checkDate.getFullYear(),
-                checkDate.getMonth(),
-                checkDate.getDate()
-            );
-
-            if (habit.completedDates[dateString]) {
-                count++;
-            }
+        while (streak <= 52) {
+            count = countWeekCompletions(habit, weekStart);
+            if (count >= target) { streak++; weekStart.setDate(weekStart.getDate() - 7); }
+            else break;
         }
+        return streak;
+    }
 
+    function countWeekCompletions(habit, weekStart) {
+        let count = 0;
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(weekStart);
+            d.setDate(weekStart.getDate() + i);
+            if (habit.completedDates[formatDate(d.getFullYear(), d.getMonth(), d.getDate())]) count++;
+        }
         return count;
     }
 
-    function calculateEveryXDaysStreak(habit, today, everyXDays) {
-        const completedDates = Object.keys(habit.completedDates).sort().reverse();
+    function calcEveryXStreak(habit, today, everyX) {
+        const dates = Object.keys(habit.completedDates).sort().reverse();
+        if (dates.length === 0) return 0;
 
-        if (completedDates.length === 0) {
-            return 0;
-        }
-
-        // Parse date string safely (avoid timezone issues)
-        function parseDate(dateStr) {
-            const parts = dateStr.split('-');
-            const d = new Date(
-                parseInt(parts[0]),
-                parseInt(parts[1]) - 1,
-                parseInt(parts[2])
-            );
-            d.setHours(0, 0, 0, 0);
-            return d;
-        }
-
-        const mostRecent = parseDate(completedDates[0]);
-        const todayDate = new Date(today);
-        todayDate.setHours(0, 0, 0, 0);
-
-        const daysSinceLast = Math.round((todayDate - mostRecent) / (1000 * 60 * 60 * 24));
-
-        if (daysSinceLast > everyXDays) {
-            return 0;
-        }
+        const mostRecent = parseDate(dates[0]);
+        const daysSince = Math.round((today - mostRecent) / MS_PER_DAY);
+        if (daysSince > everyX) return 0;
 
         let streak = 1;
-
-        for (let i = 0; i < completedDates.length - 1; i++) {
-            const current = parseDate(completedDates[i]);
-            const previous = parseDate(completedDates[i + 1]);
-
-            const gap = Math.round((current - previous) / (1000 * 60 * 60 * 24));
-
-            if (gap <= everyXDays) {
-                streak++;
-            } else {
-                break;
-            }
+        for (let i = 0; i < dates.length - 1; i++) {
+            const gap = Math.round((parseDate(dates[i]) - parseDate(dates[i + 1])) / MS_PER_DAY);
+            if (gap <= everyX) streak++;
+            else break;
         }
-
         return streak;
     }
 
-    function calculateTotalDays(habit) {
-        return Object.keys(habit.completedDates).length;
-    }
+    // ============ STATUS LABELS ============
+    function getStreakLabel(habit, streak) {
+        const { type } = habit.goal || { type: 'daily' };
 
-    function getStreakLabel(habit, streakCount) {
-        const goalType = habit.goal ? habit.goal.type : 'daily';
-
-        if (goalType === 'weekly') {
-            // Check if on track this week
+        if (type === 'weekly') {
             const status = getWeeklyStatus(habit);
-            if (status.overdue) {
-                return status.text;
-            }
-            return streakCount + (streakCount === 1 ? ' week streak' : ' weeks streak');
-        } else if (goalType === 'everyXDays') {
-            const status = getEveryXDaysStatus(habit);
-            return status.text;
-        } else {
-            // Daily - check if done today
-            const status = getDailyStatus(habit);
-            if (status.overdue) {
-                return status.text;
-            }
-            return streakCount + (streakCount === 1 ? ' day streak' : ' days streak');
+            return status.overdue ? status.text : `${streak} ${streak === 1 ? 'week' : 'weeks'} streak`;
         }
+        if (type === 'everyXDays') return getEveryXStatus(habit).text;
+
+        const status = getDailyStatus(habit);
+        return status.overdue ? status.text : `${streak} ${streak === 1 ? 'day' : 'days'} streak`;
     }
 
-    function getEveryXDaysStatus(habit) {
-        const everyXDays = habit.goal.value;
-        const completedDates = Object.keys(habit.completedDates).sort().reverse();
-
-        if (completedDates.length === 0) {
-            return { text: 'Due today' };
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Parse the date string manually to avoid timezone issues
-        const lastDateStr = completedDates[0];
-        const parts = lastDateStr.split('-');
-        const lastCompletion = new Date(
-            parseInt(parts[0]),      // year
-            parseInt(parts[1]) - 1,  // month (0-indexed)
-            parseInt(parts[2])       // day
-        );
-        lastCompletion.setHours(0, 0, 0, 0);
-
-        const daysSinceLast = Math.round((today - lastCompletion) / (1000 * 60 * 60 * 24));
-
-        if (daysSinceLast === 0) {
-            return { text: 'Done · due in ' + everyXDays + ' days' };
-        } else if (daysSinceLast < everyXDays) {
-            const daysUntilDue = everyXDays - daysSinceLast;
-            return { text: 'Due in ' + daysUntilDue + (daysUntilDue === 1 ? ' day' : ' days') };
-        } else if (daysSinceLast === everyXDays) {
-            return { text: 'Due today' };
-        } else {
-            const daysOverdue = daysSinceLast - everyXDays;
-            return { text: 'Overdue by ' + daysOverdue + (daysOverdue === 1 ? ' day' : ' days') };
-        }
-    }
     function getDailyStatus(habit) {
-        const today = new Date();
-        const todayString = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
-
-        if (habit.completedDates[todayString]) {
-            return { overdue: false };
-        } else {
-            return { overdue: true, text: 'Due today' };
-        }
+        return habit.completedDates[getTodayString()] ? { overdue: false } : { overdue: true, text: 'Due today' };
     }
 
     function getWeeklyStatus(habit) {
-        const targetPerWeek = habit.goal.value;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Get start of current week (Sunday)
+        const target = habit.goal.value;
+        const today = getToday();
         const weekStart = new Date(today);
         weekStart.setDate(today.getDate() - today.getDay());
 
-        // Count completions this week
-        let completionsThisWeek = 0;
-        for (let i = 0; i < 7; i++) {
-            const checkDate = new Date(weekStart);
-            checkDate.setDate(weekStart.getDate() + i);
-
-            // Don't count future days
-            if (checkDate > today) break;
-
-            const dateString = formatDate(
-                checkDate.getFullYear(),
-                checkDate.getMonth(),
-                checkDate.getDate()
-            );
-
-            if (habit.completedDates[dateString]) {
-                completionsThisWeek++;
-            }
+        let count = 0;
+        for (let i = 0; i <= today.getDay(); i++) {
+            const d = new Date(weekStart);
+            d.setDate(weekStart.getDate() + i);
+            if (habit.completedDates[formatDate(d.getFullYear(), d.getMonth(), d.getDate())]) count++;
         }
 
-        // Days left in week (including today)
-        const dayOfWeek = today.getDay(); // 0 = Sunday
-        const daysLeftInWeek = 7 - dayOfWeek;
-
-        const remaining = targetPerWeek - completionsThisWeek;
-
-        if (remaining <= 0) {
-            return { overdue: false };
-        } else if (remaining <= daysLeftInWeek) {
-            return { overdue: false }; // Still achievable
-        } else {
-            return { overdue: true, text: 'Behind this week' };
-        }
+        const remaining = target - count;
+        const daysLeft = 7 - today.getDay();
+        if (remaining <= 0 || remaining <= daysLeft) return { overdue: false };
+        return { overdue: true, text: 'Behind this week' };
     }
 
-    function getGoalDescription(habit) {
-        const goalType = habit.goal ? habit.goal.type : 'daily';
-        const goalValue = habit.goal ? habit.goal.value : 1;
+    function getEveryXStatus(habit) {
+        const everyX = habit.goal.value;
+        const dates = Object.keys(habit.completedDates).sort().reverse();
+        if (dates.length === 0) return { text: 'Due today' };
 
-        if (goalType === 'daily') {
-            return 'Every day';
-        } else if (goalType === 'weekly') {
-            return goalValue + 'x per week';
-        } else if (goalType === 'everyXDays') {
-            return 'Every ' + goalValue + ' days';
-        }
-        return '';
+        const today = getToday();
+        const daysSince = Math.round((today - parseDate(dates[0])) / MS_PER_DAY);
+
+        if (daysSince === 0) return { text: `Done · due in ${everyX} days` };
+        if (daysSince < everyX) return { text: `Due in ${everyX - daysSince} ${everyX - daysSince === 1 ? 'day' : 'days'}` };
+        if (daysSince === everyX) return { text: 'Due today' };
+        const overdue = daysSince - everyX;
+        return { text: `Overdue by ${overdue} ${overdue === 1 ? 'day' : 'days'}` };
     }
+
     // ============ RENDER FUNCTIONS ============
+    const BULB_SVG = (active) => `<svg class="bulb ${active ? 'on' : 'off'}" viewBox="0 0 24 24" fill="${active ? '#e8b923' : '#555'}"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/></svg>`;
 
     function renderDashboard() {
-        const container = document.getElementById('habits-container');
+        const container = $('habits-container');
         container.innerHTML = '';
 
-        // Empty state
         if (state.habits.length === 0) {
-            const emptyState = document.createElement('div');
-            emptyState.className = 'empty-state';
-            emptyState.innerHTML = '<p>No habits yet</p><span>Click "+ Add Habit" to get started</span>';
-            container.appendChild(emptyState);
+            container.innerHTML = '<div class="empty-state"><p>No habits yet</p><span>Click "+ Add Habit" to get started</span></div>';
             return;
         }
-
-        // Render each habit card
-        state.habits.forEach(function (habit) {
-            const card = createHabitCard(habit);
-            container.appendChild(card);
-        });
+        state.habits.forEach(habit => container.appendChild(createHabitCard(habit)));
     }
 
     function createHabitCard(habit) {
         const card = document.createElement('div');
         card.className = 'habit-card';
-
-        // Header
-        const header = document.createElement('div');
-        header.className = 'habit-header';
-
-        const nameContainer = document.createElement('div');
-        nameContainer.className = 'habit-name-container';
-
-        const name = document.createElement('span');
-        name.className = 'habit-name';
-        name.textContent = habit.name;
-        name.style.cursor = 'pointer';
-        name.addEventListener('click', function () {
-            openYearView(habit.id);
-        });
-        // Add goal description
-        const goalDesc = document.createElement('span');
-        goalDesc.className = 'habit-goal-desc';
-        goalDesc.textContent = getGoalDescription(habit);
-
-        const stats = document.createElement('div');
-        stats.className = 'habit-stats';
-
-        const streak = calculateStreak(habit);
-        const isStreakActive = streak > 0;
-
-        const bulbSVG = `<svg class="bulb ${isStreakActive ? 'on' : 'off'}" viewBox="0 0 24 24" fill="${isStreakActive ? '#e8b923' : '#555'}">
-            <path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/>
-        </svg>`;
-
-        stats.innerHTML = '<span class="streak-icon">' + bulbSVG + '<span class="streak-count ' + (isStreakActive ? '' : 'off') + '">' + getStreakLabel(habit, streak) + '</span></span> · <span class="total">' + calculateTotalDays(habit) + ' total</span>';
-
-        nameContainer.appendChild(name);
-        nameContainer.appendChild(goalDesc);
-        nameContainer.appendChild(stats);
-
-        const viewYearBtn = document.createElement('button');
-        viewYearBtn.className = 'view-btn';
-        viewYearBtn.textContent = 'View Year';
-        viewYearBtn.addEventListener('click', function () {
-            openYearView(habit.id);
-        });
-
-        header.appendChild(nameContainer);
-        header.appendChild(viewYearBtn);
-        card.appendChild(header);
-
-        // Days grid
-        const grid = document.createElement('div');
-        grid.className = 'days-grid';
-
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth();
-        const todayDate = today.getDate();
-        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dayElement = document.createElement('div');
-            dayElement.className = 'day';
-            dayElement.textContent = day;
-
-            const dateString = formatDate(currentYear, currentMonth, day);
-
-            if (habit.completedDates[dateString]) {
-                dayElement.classList.add('lit');
-            }
-
-            if (day > todayDate) {
-                dayElement.classList.add('disabled');
-            } else {
-                dayElement.addEventListener('click', function () {
-                    toggleDate(habit.id, dateString);
-                    dayElement.classList.toggle('lit');
-                    updateHabitStats(habit.id);
-                });
-            }
-
-            grid.appendChild(dayElement);
-        }
-
-        card.appendChild(grid);
-
-        // Store habit ID on the card for reference
         card.dataset.habitId = habit.id;
 
+        const streak = calculateStreak(habit);
+        const active = streak > 0;
+        const total = Object.keys(habit.completedDates).length;
+
+        card.innerHTML = `
+            <div class="habit-header">
+                <div class="habit-name-container">
+                    <span class="habit-name">${habit.name}</span>
+                    <span class="habit-goal-desc">${getGoalDescription(habit)}</span>
+                    <div class="habit-stats">
+                        <span class="streak-icon">${BULB_SVG(active)}<span class="streak-count ${active ? '' : 'off'}">${getStreakLabel(habit, streak)}</span></span>
+                        <span class="total">· ${total} total</span>
+                    </div>
+                </div>
+                <div class="habit-header-right">
+                    <button class="view-btn view-year-btn">View Year</button>
+                    <div class="habit-actions">
+                        <button class="action-btn edit-btn">Edit</button>
+                        <button class="action-btn danger-btn delete-btn">Delete</button>
+                    </div>
+                </div>
+            </div>
+            <div class="days-grid"></div>`;
+
+        // Event listeners
+        card.querySelector('.habit-name').onclick = () => openYearView(habit.id);
+        card.querySelector('.view-year-btn').onclick = () => openYearView(habit.id);
+        card.querySelector('.edit-btn').onclick = () => openEditModal(habit.id);
+        card.querySelector('.delete-btn').onclick = () => openDeleteModal(habit.id);
+
+        // Render days grid
+        const grid = card.querySelector('.days-grid');
+        const today = getToday();
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day';
+            dayEl.textContent = day;
+            const dateStr = formatDate(today.getFullYear(), today.getMonth(), day);
+
+            if (habit.completedDates[dateStr]) dayEl.classList.add('lit');
+            if (day > today.getDate()) {
+                dayEl.classList.add('disabled');
+            } else {
+                dayEl.onclick = () => {
+                    toggleDate(habit.id, dateStr);
+                    dayEl.classList.toggle('lit');
+                    updateHabitStats(habit.id);
+                };
+            }
+            grid.appendChild(dayEl);
+        }
         return card;
     }
 
     function updateHabitStats(habitId) {
         const habit = getHabitById(habitId);
-        if (!habit) return;
+        const card = $q(`.habit-card[data-habit-id="${habitId}"]`);
+        if (!habit || !card) return;
 
-        const card = document.querySelector('.habit-card[data-habit-id="' + habitId + '"]');
-        if (!card) return;
-
+        const streak = calculateStreak(habit);
+        const active = streak > 0;
         const stats = card.querySelector('.habit-stats');
         if (stats) {
-            const streak = calculateStreak(habit);
-            const isStreakActive = streak > 0;
-
-            const bulbSVG = `<svg class="bulb ${isStreakActive ? 'on' : 'off'}" viewBox="0 0 24 24" fill="${isStreakActive ? '#e8b923' : '#555'}">
-                <path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/>
-            </svg>`;
-
-            stats.innerHTML = '<span class="streak-icon">' + bulbSVG + '<span class="streak-count ' + (isStreakActive ? '' : 'off') + '">' + getStreakLabel(habit, streak) + '</span></span> · <span class="total">' + calculateTotalDays(habit) + ' total</span>';
+            stats.innerHTML = `<span class="streak-icon">${BULB_SVG(active)}<span class="streak-count ${active ? '' : 'off'}">${getStreakLabel(habit, streak)}</span></span><span class="total">· ${Object.keys(habit.completedDates).length} total</span>`;
         }
     }
 
     function openYearView(habitId) {
         state.currentHabitId = habitId;
         state.currentViewingYear = new Date().getFullYear();
-
-        dashboardView.classList.add('hidden');
-        yearView.classList.remove('hidden');
-
+        $('dashboard-view').classList.add('hidden');
+        $('year-view').classList.remove('hidden');
         renderYearView();
     }
 
@@ -514,170 +328,160 @@ document.addEventListener('DOMContentLoaded', function () {
         const habit = getHabitById(state.currentHabitId);
         if (!habit) return;
 
-        // Update header
-        const yearHabitName = document.querySelector('.year-habit-name');
-        if (yearHabitName) {
-            yearHabitName.textContent = habit.name;
-        }
+        const yearHabitName = $q('.year-habit-name');
+        if (yearHabitName) yearHabitName.textContent = habit.name;
+        $('year-display').textContent = state.currentViewingYear;
 
-        const yearDisplay = document.getElementById('year-display');
-        yearDisplay.textContent = state.currentViewingYear;
-
-        const grid = document.getElementById('year-grid');
+        const grid = $('year-grid');
         grid.innerHTML = '';
-
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-        const today = new Date();
-        const todayYear = today.getFullYear();
-        const todayMonth = today.getMonth();
-        const todayDate = today.getDate();
+        const today = getToday();
 
         for (let month = 0; month < 12; month++) {
-            const monthColumn = document.createElement('div');
-            monthColumn.className = 'month-column';
-
-            const monthLabel = document.createElement('div');
-            monthLabel.className = 'month-label';
-            monthLabel.textContent = months[month];
-            monthColumn.appendChild(monthLabel);
+            const col = document.createElement('div');
+            col.className = 'month-column';
+            col.innerHTML = `<div class="month-label">${MONTHS[month]}</div>`;
 
             const daysInMonth = new Date(state.currentViewingYear, month + 1, 0).getDate();
-
             for (let day = 1; day <= daysInMonth; day++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'day';
-                dayElement.textContent = day;
+                const dayEl = document.createElement('div');
+                dayEl.className = 'day';
+                dayEl.textContent = day;
+                const dateStr = formatDate(state.currentViewingYear, month, day);
 
-                const dateString = formatDate(state.currentViewingYear, month, day);
-
-                if (habit.completedDates[dateString]) {
-                    dayElement.classList.add('lit');
-                }
-
-                const isFuture = isDateInFuture(state.currentViewingYear, month, day, todayYear, todayMonth, todayDate);
-
-                if (isFuture) {
-                    dayElement.classList.add('disabled');
+                if (habit.completedDates[dateStr]) dayEl.classList.add('lit');
+                if (isFutureDate(state.currentViewingYear, month, day)) {
+                    dayEl.classList.add('disabled');
                 } else {
-                    dayElement.addEventListener('click', function () {
-                        toggleDate(habit.id, dateString);
-                        dayElement.classList.toggle('lit');
-                    });
+                    dayEl.onclick = () => {
+                        toggleDate(habit.id, dateStr);
+                        dayEl.classList.toggle('lit');
+                    };
                 }
-
-                monthColumn.appendChild(dayElement);
+                col.appendChild(dayEl);
             }
-
-            grid.appendChild(monthColumn);
+            grid.appendChild(col);
         }
     }
 
     // ============ MODAL FUNCTIONS ============
-
-    function openModal() {
-        addHabitModal.classList.remove('hidden');
-        habitNameInput.value = '';
-        habitNameInput.focus();
+    function openAddModal() {
+        resetGoalForm('');
+        $('add-habit-modal').classList.remove('hidden');
+        $('habit-name-input').value = '';
+        $('habit-name-input').focus();
     }
 
-    function closeModal() {
-        addHabitModal.classList.add('hidden');
-        habitNameInput.value = '';
-        // Reset goal options to default
-        document.querySelector('input[name="goal-type"][value="daily"]').checked = true;
-        document.getElementById('weekly-value').value = '3';
-        document.getElementById('every-x-days-value').value = '2';
+    function closeAddModal() {
+        $('add-habit-modal').classList.add('hidden');
     }
 
     function saveNewHabit() {
-        const name = habitNameInput.value.trim();
+        const name = $('habit-name-input').value.trim();
+        if (!name) return $('habit-name-input').focus();
 
-        if (name === '') {
-            habitNameInput.focus();
-            return;
-        }
-
-        // Get selected goal type
-        const goalTypeInput = document.querySelector('input[name="goal-type"]:checked');
-        const goalType = goalTypeInput.value;
-
-        // Get goal value based on type
-        let goalValue = 1;
-        if (goalType === 'weekly') {
-            goalValue = parseInt(document.getElementById('weekly-value').value);
-        } else if (goalType === 'everyXDays') {
-            goalValue = parseInt(document.getElementById('every-x-days-value').value);
-        }
-
-        const newHabit = {
-            id: generateId(),
-            name: name,
+        state.habits.push({
+            id: Date.now().toString(),
+            name,
             completedDates: {},
-            goal: {
-                type: goalType,
-                value: goalValue
-            }
-        };
-
-        state.habits.push(newHabit);
+            goal: getGoalFromForm('')
+        });
         saveData();
-        closeModal();
+        closeAddModal();
+        renderDashboard();
+    }
+
+    function openEditModal(habitId) {
+        state.editingHabitId = habitId;
+        const habit = getHabitById(habitId);
+        if (!habit) return;
+
+        $('edit-habit-modal').classList.remove('hidden');
+        $('edit-habit-name-input').focus();
+        $('edit-habit-name-input').value = habit.name;  // Set value AFTER focus
+        setGoalInForm(habit, 'edit-');
+    }
+
+    function closeEditModal() {
+        $('edit-habit-modal').classList.add('hidden');
+        state.editingHabitId = null;
+    }
+
+    function saveEditedHabit() {
+        const habit = getHabitById(state.editingHabitId);
+        if (!habit) return;
+
+        const name = $('edit-habit-name-input').value.trim();
+        if (!name) return $('edit-habit-name-input').focus();
+
+        habit.name = name;
+        habit.goal = getGoalFromForm('edit-');
+        saveData();
+        closeEditModal();
+
+        $('year-view').classList.contains('hidden') ? renderDashboard() : renderYearView();
+    }
+
+    function openDeleteModal(habitId) {
+        state.editingHabitId = habitId;
+        const habit = getHabitById(habitId);
+        if (!habit) return;
+
+        $('delete-habit-name').textContent = habit.name;
+        $('delete-habit-modal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        $('delete-habit-modal').classList.add('hidden');
+        state.editingHabitId = null;
+    }
+
+    function confirmDelete() {
+        state.habits = state.habits.filter(h => h.id !== state.editingHabitId);
+        saveData();
+        closeDeleteModal();
+
+        if (!$('year-view').classList.contains('hidden')) {
+            $('year-view').classList.add('hidden');
+            $('dashboard-view').classList.remove('hidden');
+        }
         renderDashboard();
     }
 
     // ============ EVENT LISTENERS ============
-
-    const dashboardView = document.getElementById('dashboard-view');
-    const yearView = document.getElementById('year-view');
-    const addHabitBtn = document.getElementById('add-habit-btn');
-    const addHabitModal = document.getElementById('add-habit-modal');
-    const habitNameInput = document.getElementById('habit-name-input');
-    const cancelHabitBtn = document.getElementById('cancel-habit-btn');
-    const saveHabitBtn = document.getElementById('save-habit-btn');
-    const backBtn = document.getElementById('back-btn');
-    const prevYearBtn = document.getElementById('prev-year-btn');
-    const nextYearBtn = document.getElementById('next-year-btn');
-
-    // Add Habit Modal
-    addHabitBtn.addEventListener('click', openModal);
-    cancelHabitBtn.addEventListener('click', closeModal);
-    saveHabitBtn.addEventListener('click', saveNewHabit);
-
-    // Allow Enter key to save habit
-    habitNameInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            saveNewHabit();
-        }
+    // Add Modal
+    $('add-habit-btn').onclick = openAddModal;
+    $('cancel-habit-btn').onclick = closeAddModal;
+    $('save-habit-btn').onclick = saveNewHabit;
+    $('habit-name-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') saveNewHabit();
     });
+    $('add-habit-modal').onclick = e => e.target === $('add-habit-modal') && closeAddModal();
 
-    // Close modal when clicking outside
-    addHabitModal.addEventListener('click', function (e) {
-        if (e.target === addHabitModal) {
-            closeModal();
-        }
+    // Edit Modal
+    $('cancel-edit-btn').onclick = closeEditModal;
+    $('save-edit-btn').onclick = saveEditedHabit;
+    $('edit-habit-name-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') saveEditedHabit();
     });
+    $('edit-habit-modal').onclick = e => e.target === $('edit-habit-modal') && closeEditModal();
 
-    // Year View Navigation
-    backBtn.addEventListener('click', function () {
-        yearView.classList.add('hidden');
-        dashboardView.classList.remove('hidden');
+    // Delete Modal
+    $('cancel-delete-btn').onclick = closeDeleteModal;
+    $('confirm-delete-btn').onclick = confirmDelete;
+    $('delete-habit-modal').onclick = e => e.target === $('delete-habit-modal') && closeDeleteModal();
+
+    // Year View
+    $('back-btn').onclick = () => {
+        $('year-view').classList.add('hidden');
+        $('dashboard-view').classList.remove('hidden');
         renderDashboard();
-    });
+    };
+    $('prev-year-btn').onclick = () => { state.currentViewingYear--; renderYearView(); };
+    $('next-year-btn').onclick = () => { state.currentViewingYear++; renderYearView(); };
+    $('year-edit-btn').onclick = () => openEditModal(state.currentHabitId);
+    $('year-delete-btn').onclick = () => openDeleteModal(state.currentHabitId);
 
-    prevYearBtn.addEventListener('click', function () {
-        state.currentViewingYear = state.currentViewingYear - 1;
-        renderYearView();
-    });
-
-    nextYearBtn.addEventListener('click', function () {
-        state.currentViewingYear = state.currentViewingYear + 1;
-        renderYearView();
-    });
-
-    // ============ INITIALIZE APP ============
-
+    // ============ INITIALIZE ============
     loadData();
     renderDashboard();
 
