@@ -305,6 +305,8 @@ body {
     border-radius: 12px;
     width: 90%;
     max-width: 400px;
+    position: relative;
+    z-index: 101;
 }
 
 .modal-content h2 {
@@ -404,6 +406,7 @@ body {
     color: #888;
     margin-bottom: 8px;
     margin-top: 16px;
+    pointer-events: none;
 }
 
 /* Goal Options */

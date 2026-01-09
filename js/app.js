@@ -455,21 +455,30 @@ document.addEventListener('DOMContentLoaded', function () {
     $('habit-name-input').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') saveNewHabit();
     });
-    $('add-habit-modal').onclick = e => e.target === $('add-habit-modal') && closeAddModal();
-
+    $('add-habit-modal').addEventListener('click', function (e) {
+        if (e.target === $('add-habit-modal')) {
+            closeAddModal();
+        }
+    });
     // Edit Modal
     $('cancel-edit-btn').onclick = closeEditModal;
     $('save-edit-btn').onclick = saveEditedHabit;
     $('edit-habit-name-input').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') saveEditedHabit();
     });
-    $('edit-habit-modal').onclick = e => e.target === $('edit-habit-modal') && closeEditModal();
-
+    $('edit-habit-modal').addEventListener('click', function (e) {
+        if (e.target === $('edit-habit-modal')) {
+            closeEditModal();
+        }
+    });
     // Delete Modal
     $('cancel-delete-btn').onclick = closeDeleteModal;
     $('confirm-delete-btn').onclick = confirmDelete;
-    $('delete-habit-modal').onclick = e => e.target === $('delete-habit-modal') && closeDeleteModal();
-
+    $('delete-habit-modal').addEventListener('click', function (e) {
+        if (e.target === $('delete-habit-modal')) {
+            closeDeleteModal();
+        }
+    });
     // Year View
     $('back-btn').onclick = () => {
         $('year-view').classList.add('hidden');
