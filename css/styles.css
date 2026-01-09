@@ -35,8 +35,10 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-family: inherit;
-    font-size: 16px;
+    font-size: 14px;
     transition: all 0.2s;
+    min-width: 80px;
+    text-align: center;
 }
 
 .view-btn:hover {
@@ -388,7 +390,7 @@ body {
 }
 
 .habit-stats {
-    font-size: 14px;
+    font-size: 16px;
     color: #888;
     display: flex;
     align-items: center;
@@ -480,7 +482,7 @@ body {
 }
 
 .habit-goal-desc {
-    font-size: 12px;
+    font-size: 14px;
     color: #666;
     margin-bottom: 4px;
 }
@@ -492,10 +494,12 @@ body {
     color: #666;
     font-family: 'Crimson Text', serif;
     font-size: 14px;
-    padding: 6px 14px;
-    border-radius: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
+    min-width: 80px;
+    text-align: center;
 }
 
 .action-btn:hover {
@@ -520,12 +524,12 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 8px;
+    gap: 12px;
 }
 
 .habit-actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
 }
 
 /* Year view habit info */
@@ -594,4 +598,227 @@ body {
     color: #e8b923;
     font-weight: 600;
     font-style: normal;
+}
+
+/* ============ ANIMATIONS ============ */
+
+/* Page fade-in */
+body {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Habit cards slide in */
+#habits-container .habit-card {
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Day circle click effect */
+.day:active:not(.disabled) {
+    transform: scale(0.9);
+}
+
+.day.lit {
+    animation: pop 0.3s ease-out;
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Modal animation */
+.modal {
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Button hover lift */
+.add-btn:hover,
+.view-btn:hover,
+.action-btn:hover,
+.save-btn:hover,
+.cancel-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Welcome message fade in */
+.welcome-message {
+    animation: fadeSlideDown 0.6s ease-out;
+}
+
+@keyframes fadeSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Year view visibility fix */
+#year-view {
+    animation: none;
+}
+
+#year-view.hidden {
+    display: none;
+}
+
+/* ============ YEAR VIEW ANIMATIONS ============ */
+
+/* Year view fade in */
+#year-view:not(.hidden) {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Year grid slide up */
+.year-grid {
+    animation: slideUp 0.5s ease-out;
+}
+
+/* Month columns stagger effect */
+.month-column {
+    animation: fadeInUp 0.4s ease-out backwards;
+}
+
+.month-column:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.month-column:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.month-column:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.month-column:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.month-column:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.month-column:nth-child(6) {
+    animation-delay: 0.3s;
+}
+
+.month-column:nth-child(7) {
+    animation-delay: 0.35s;
+}
+
+.month-column:nth-child(8) {
+    animation-delay: 0.4s;
+}
+
+.month-column:nth-child(9) {
+    animation-delay: 0.45s;
+}
+
+.month-column:nth-child(10) {
+    animation-delay: 0.5s;
+}
+
+.month-column:nth-child(11) {
+    animation-delay: 0.55s;
+}
+
+.month-column:nth-child(12) {
+    animation-delay: 0.6s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Year header elements */
+.year-header {
+    animation: fadeSlideDown 0.4s ease-out;
+}
+
+/* Year navigation buttons */
+.arrow-btn {
+    transition: all 0.2s ease, transform 0.2s ease;
+}
+
+.arrow-btn:hover {
+    transform: scale(1.2);
+}
+
+.arrow-btn:active {
+    transform: scale(0.95);
+}
+
+/* Year display number */
+#year-display {
+    transition: all 0.3s ease;
+}
+
+/* Back button hover */
+#back-btn:hover {
+    transform: translateX(-3px);
+}
+
+/* Larger habit name in cards */
+.habit-name-container .habit-name {
+    font-size: 22px;
 }
