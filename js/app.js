@@ -71,6 +71,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
             renderDashboard();
         }
+        function getGreeting() {
+            const hour = new Date().getHours();
+            if (hour >= 5 && hour < 12) return 'Good morning';
+            if (hour >= 12 && hour < 17) return 'Good afternoon';
+            if (hour >= 17 && hour < 21) return 'Good evening';
+            return 'Good night';
+        }
+
+        async function displayWelcome() {
+            const { data } = await sb.from('profiles')
+                .select('username')
+                .eq('id', state.userId)
+                .single();
+
+            const username = data?.username || 'there';
+            const greeting = getGreeting();
+            $('welcome-message').innerHTML = `${greeting}, <span>@${username}</span>!`;
+        }
 
         async function createHabit(name, goalType, goalValue) {
             const { data, error } = await sb
@@ -617,6 +635,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // ============ INITIALIZE ============
         loadHabits();
+        displayWelcome();
     }
 
 });
