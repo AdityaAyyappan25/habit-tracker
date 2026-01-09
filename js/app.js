@@ -163,9 +163,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const MS_PER_DAY = 86400000;
 
         function playSound() {
-            clickSound.currentTime = 0;
-            clickSound.volume = 0.5;
-            clickSound.play().catch(() => { });
+            const sound = new Audio('assets/sounds/click.mp3');
+            sound.volume = 0.5;
+            sound.play().catch(() => { });
         }
 
         function formatDate(year, month, day) {
