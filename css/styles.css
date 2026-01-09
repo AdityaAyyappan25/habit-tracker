@@ -566,3 +566,8 @@ body {
     background: #c45c5c;
     border-color: #c45c5c;
 }
+
+.header-buttons {
+    display: flex;
+    gap: 12px;
+}
