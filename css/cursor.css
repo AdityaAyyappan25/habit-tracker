@@ -1,58 +1,143 @@
-/* ============ CUSTOM CURSOR ============ */
+/* ============ FLAME LAMP CURSOR ============ */
 * {
     cursor: none !important;
 }
 
-.cursor-glow {
+/* Main flame */
+.cursor-flame {
     position: fixed;
-    width: 40px;
-    height: 40px;
-    border: 2px solid rgba(232, 185, 35, 0.5);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    transition: transform 0.15s ease-out, width 0.2s, height 0.2s, border-color 0.2s;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 15px rgba(232, 185, 35, 0.3), 0 0 30px rgba(232, 185, 35, 0.1);
-}
-
-.cursor-dot {
-    position: fixed;
-    width: 8px;
-    height: 8px;
-    background: radial-gradient(circle, #f5d547, #e8b923);
-    border-radius: 50%;
+    width: 20px;
+    height: 30px;
     pointer-events: none;
     z-index: 10000;
+    transform: translate(-50%, -100%);
+    filter: blur(1px);
+}
+
+.cursor-flame::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 24px;
+    background:
+        radial-gradient(ellipse at 50% 90%, #fff 0%, transparent 30%),
+        radial-gradient(ellipse at 50% 70%, #f5d547 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, #e8b923 0%, transparent 60%),
+        radial-gradient(ellipse at 50% 30%, #c9920c 0%, transparent 70%);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    animation: flicker 0.15s infinite alternate;
+}
+
+.cursor-flame::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, #e8b923 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+/* Glow effect - lights up the area */
+.cursor-glow {
+    position: fixed;
+    width: 150px;
+    height: 150px;
+    pointer-events: none;
+    z-index: 9998;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 10px rgba(232, 185, 35, 0.8), 0 0 20px rgba(232, 185, 35, 0.4);
+    background: radial-gradient(circle,
+            rgba(232, 185, 35, 0.15) 0%,
+            rgba(232, 185, 35, 0.08) 30%,
+            rgba(232, 185, 35, 0.02) 60%,
+            transparent 70%);
+    border-radius: 50%;
+    transition: width 0.3s, height 0.3s;
+}
+
+/* Trail particles */
+.trail-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+    background: radial-gradient(circle, #f5d547, #e8b923, transparent);
+    animation: fadeOut 0.8s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0);
+    }
+}
+
+@keyframes flicker {
+    0% {
+        transform: translateX(-50%) scale(1, 1);
+        opacity: 1;
+    }
+
+    25% {
+        transform: translateX(-50%) scale(0.95, 1.05) skewX(-2deg);
+        opacity: 0.95;
+    }
+
+    50% {
+        transform: translateX(-50%) scale(1.02, 0.98) skewX(1deg);
+        opacity: 1;
+    }
+
+    75% {
+        transform: translateX(-50%) scale(0.98, 1.03) skewX(-1deg);
+        opacity: 0.9;
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1, 1);
+        opacity: 1;
+    }
+}
+
+/* Hover state - flame grows */
+.cursor-flame.hover::before {
+    width: 18px;
+    height: 30px;
+    filter: brightness(1.2);
 }
 
 .cursor-glow.hover {
-    width: 50px;
-    height: 50px;
-    border-color: rgba(232, 185, 35, 0.8);
-    box-shadow: 0 0 20px rgba(232, 185, 35, 0.5), 0 0 40px rgba(232, 185, 35, 0.2);
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle,
+            rgba(232, 185, 35, 0.2) 0%,
+            rgba(232, 185, 35, 0.1) 30%,
+            rgba(232, 185, 35, 0.03) 60%,
+            transparent 70%);
 }
 
-.cursor-dot.hover {
-    transform: translate(-50%, -50%) scale(1.5);
-    box-shadow: 0 0 15px rgba(232, 185, 35, 1), 0 0 30px rgba(232, 185, 35, 0.6);
+/* Click state - flame bursts */
+.cursor-flame.click::before {
+    transform: translateX(-50%) scale(1.3);
+    filter: brightness(1.4);
 }
 
-.cursor-glow.click {
-    transform: translate(-50%, -50%) scale(0.8);
-    border-color: #f5d547;
-}
-
-.cursor-dot.click {
-    transform: translate(-50%, -50%) scale(0.5);
-}
-
+/* Hide on mobile */
 @media (hover: none) {
 
+    .cursor-flame,
     .cursor-glow,
-    .cursor-dot {
+    .trail-particle {
         display: none;
     }
 

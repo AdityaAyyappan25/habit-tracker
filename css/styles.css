@@ -1150,3 +1150,44 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ============ DRAG AND DROP ============ */
+
+.habit-card {
+    position: relative;
+    padding-left: 40px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.habit-card.dragging {
+    opacity: 0.8;
+    transform: scale(1.02);
+    box-shadow: 0 10px 40px rgba(232, 185, 35, 0.3);
+    z-index: 100;
+}
+
+.habit-card.drag-over {
+    border: 2px dashed #e8b923;
+}
+
+.drag-handle {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: grab;
+    color: #333;
+    font-size: 16px;
+    letter-spacing: 1px;
+    transition: color 0.2s ease;
+    user-select: none;
+}
+
+.drag-handle:hover {
+    color: #e8b923;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+    color: #f5d547;
+}

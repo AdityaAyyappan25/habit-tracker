@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 .from('habits')
                 .select('*')
                 .eq('user_id', state.userId)
-                .order('created_at', { ascending: true });
+                .order('display_order', { ascending: true });
 
             if (habitsError) {
                 console.error('Error loading habits:', habitsError);
@@ -403,30 +403,32 @@ document.addEventListener('DOMContentLoaded', function () {
             const card = document.createElement('div');
             card.className = 'habit-card';
             card.dataset.habitId = habit.id;
+            card.draggable = true;
 
             const streak = calculateStreak(habit);
             const active = streak > 0;
             const total = Object.keys(habit.completedDates).length;
 
             card.innerHTML = `
-                <div class="habit-header">
-                    <div class="habit-name-container">
-                        <span class="habit-name">${habit.name}</span>
-                        <span class="habit-goal-desc">${getGoalDescription(habit)}</span>
-                        <div class="habit-stats">
-                            <span class="streak-icon">${BULB_SVG(active)}<span class="streak-count ${active ? '' : 'off'}">${getStreakLabel(habit, streak)}</span></span>
-                            <span class="total">· ${total} total</span>
-                        </div>
-                    </div>
-                    <div class="habit-header-right">
-                        <button class="view-btn view-year-btn">View Year</button>
-                        <div class="habit-actions">
-                            <button class="action-btn edit-btn">Edit</button>
-                            <button class="action-btn danger-btn delete-btn">Delete</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="days-grid"></div>`;
+    <span class="drag-handle">⋮⋮</span>
+    <div class="habit-header">
+        <div class="habit-name-container">
+            <span class="habit-name">${habit.name}</span>
+            <span class="habit-goal-desc">${getGoalDescription(habit)}</span>
+            <div class="habit-stats">
+                <span class="streak-icon">${BULB_SVG(active)}<span class="streak-count ${active ? '' : 'off'}">${getStreakLabel(habit, streak)}</span></span>
+                <span class="total">· ${total} total</span>
+            </div>
+        </div>
+        <div class="habit-header-right">
+            <button class="view-btn view-year-btn">View Year</button>
+            <div class="habit-actions">
+                <button class="action-btn edit-btn">Edit</button>
+                <button class="action-btn danger-btn delete-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+    <div class="days-grid"></div>`;
 
             card.querySelector('.habit-name').onclick = () => openYearView(habit.id);
             card.querySelector('.view-year-btn').onclick = () => openYearView(habit.id);
@@ -772,6 +774,93 @@ document.addEventListener('DOMContentLoaded', function () {
                 }, 100 + (index * 150));
             });
         }
+        // ============ DRAG AND DROP ============
+        function initDragAndDrop() {
+            const container = $('habits-container');
+            let draggedCard = null;
+
+            container.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('habit-card')) {
+                    draggedCard = e.target;
+                    draggedCard.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                }
+            });
+
+            container.addEventListener('dragend', (e) => {
+                if (draggedCard) {
+                    draggedCard.classList.remove('dragging');
+                    document.querySelectorAll('.habit-card').forEach(card => {
+                        card.classList.remove('drag-over');
+                    });
+                    draggedCard = null;
+                }
+            });
+
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const card = e.target.closest('.habit-card');
+                if (card && card !== draggedCard) {
+                    card.classList.add('drag-over');
+                }
+            });
+
+            container.addEventListener('dragleave', (e) => {
+                const card = e.target.closest('.habit-card');
+                if (card) {
+                    card.classList.remove('drag-over');
+                }
+            });
+
+            container.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                const dropTarget = e.target.closest('.habit-card');
+
+                if (dropTarget && draggedCard && dropTarget !== draggedCard) {
+                    const cards = [...container.querySelectorAll('.habit-card')];
+                    const draggedIndex = cards.indexOf(draggedCard);
+                    const dropIndex = cards.indexOf(dropTarget);
+
+                    // Reorder in DOM
+                    if (draggedIndex < dropIndex) {
+                        dropTarget.after(draggedCard);
+                    } else {
+                        dropTarget.before(draggedCard);
+                    }
+
+                    // Update state and database
+                    await saveHabitOrder();
+                }
+
+                document.querySelectorAll('.habit-card').forEach(card => {
+                    card.classList.remove('drag-over');
+                });
+            });
+        }
+
+        async function saveHabitOrder() {
+            const cards = document.querySelectorAll('.habit-card');
+            const updates = [];
+
+            cards.forEach((card, index) => {
+                const habitId = card.dataset.habitId;
+                const habit = getHabitById(habitId);
+                if (habit) {
+                    habit.displayOrder = index;
+                    updates.push(
+                        sb.from('habits')
+                            .update({ display_order: index })
+                            .eq('id', habitId)
+                    );
+                }
+            });
+
+            // Update all habits in parallel
+            await Promise.all(updates);
+
+            // Reorder state array
+            state.habits.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+        }
 
         // ============ EVENT LISTENERS ============
         $('add-habit-btn').onclick = openAddModal;
@@ -819,6 +908,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // ============ INITIALIZE ============
         loadHabits();
+        initDragAndDrop();
     }
 
 });
