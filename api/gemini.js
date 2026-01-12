@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     // Use gemini-1.5-flash (stable model)
-    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent';
     try {
         const { username, habits } = req.body || {};
 
