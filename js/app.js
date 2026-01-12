@@ -68,8 +68,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     completedDates: completedDates
                 };
             });
-
+            state.habitsLoaded = true;
             renderDashboard();
+            displayWelcome();
         }
         function getGreeting() {
             const hour = new Date().getHours();
@@ -86,8 +87,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 .single();
 
             const username = data?.username || 'there';
-            const greeting = getGreeting();
-            $('welcome-message').innerHTML = `${greeting}, <span>@${username}</span>!`;
+
+            // Show loading state
+            $('welcome-message').innerHTML = `<span style="opacity: 0.5;">✦ Preparing your message...</span>`;
+
+            // Wait for habits to load first
+            if (state.habits.length > 0 || state.habitsLoaded) {
+                try {
+                    const aiMessage = await generateWelcomeMessage(username, state.habits);
+                    $('welcome-message').innerHTML = `${aiMessage}`;
+                } catch (error) {
+                    const greeting = getGreeting();
+                    $('welcome-message').innerHTML = `${greeting}, <span>@${username}</span>!`;
+                }
+            } else {
+                // Fallback to simple greeting
+                const greeting = getGreeting();
+                $('welcome-message').innerHTML = `${greeting}, <span>@${username}</span>!`;
+            }
         }
 
         async function createHabit(name, goalType, goalValue) {
@@ -591,6 +608,170 @@ document.addEventListener('DOMContentLoaded', function () {
                 renderDashboard();
             }
         }
+        // ============ STATISTICS FUNCTIONS ============
+        function openStatsView() {
+            $('dashboard-view').classList.add('hidden');
+            $('stats-view').classList.remove('hidden');
+            renderStats();
+        }
+
+        function closeStatsView() {
+            $('stats-view').classList.add('hidden');
+            $('dashboard-view').classList.remove('hidden');
+        }
+
+        function renderStats() {
+            const today = getToday();
+            const allCompletions = state.habits.flatMap(h => Object.keys(h.completedDates));
+
+            // Total completions
+            $('stat-total-completions').textContent = allCompletions.length;
+
+            // Active habits
+            $('stat-active-habits').textContent = state.habits.length;
+
+            // This month completion rate
+            const daysPassed = today.getDate();
+            const possibleCompletions = daysPassed * state.habits.length;
+            const thisMonthCompletions = allCompletions.filter(d => {
+                const date = parseDate(d);
+                return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+            }).length;
+            const rate = possibleCompletions > 0 ? Math.round((thisMonthCompletions / possibleCompletions) * 100) : 0;
+            $('stat-completion-rate').textContent = rate + '%';
+
+            // Best streak
+            let bestStreak = 0;
+            state.habits.forEach(h => {
+                const streak = calculateStreak(h);
+                if (streak > bestStreak) bestStreak = streak;
+            });
+            $('stat-best-streak').textContent = bestStreak;
+
+            // Weekly comparison
+            renderWeekComparison(today, allCompletions);
+
+            // Monthly chart
+            renderMonthlyChart(today, allCompletions);
+
+            // Habit breakdown
+            renderHabitBreakdown();
+        }
+
+        function renderWeekComparison(today, allCompletions) {
+            const thisWeekStart = new Date(today);
+            thisWeekStart.setDate(today.getDate() - today.getDay());
+
+            const lastWeekStart = new Date(thisWeekStart);
+            lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+            const lastWeekEnd = new Date(thisWeekStart);
+            lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+
+            let thisWeekCount = 0;
+            let lastWeekCount = 0;
+
+            allCompletions.forEach(d => {
+                const date = parseDate(d);
+                if (date >= thisWeekStart && date <= today) thisWeekCount++;
+                if (date >= lastWeekStart && date <= lastWeekEnd) lastWeekCount++;
+            });
+
+            // Calculate days in each week
+            const daysThisWeek = today.getDay() + 1; // Sunday = 0, so +1
+            const daysLastWeek = 7;
+
+            // Calculate possible completions (days × number of habits)
+            const possibleThisWeek = daysThisWeek * state.habits.length;
+            const possibleLastWeek = daysLastWeek * state.habits.length;
+
+            // Calculate percentages
+            const thisWeekPercent = possibleThisWeek > 0 ? Math.round((thisWeekCount / possibleThisWeek) * 100) : 0;
+            const lastWeekPercent = possibleLastWeek > 0 ? Math.round((lastWeekCount / possibleLastWeek) * 100) : 0;
+
+            setTimeout(() => {
+                $('bar-last-week').style.width = lastWeekPercent + '%';
+                $('bar-this-week').style.width = thisWeekPercent + '%';
+            }, 100);
+
+            $('val-last-week').textContent = lastWeekPercent + '%';
+            $('val-this-week').textContent = thisWeekPercent + '%';
+        }
+
+        function renderMonthlyChart(today, allCompletions) {
+            const chart = $('monthly-chart');
+            chart.innerHTML = '';
+
+            const monthCounts = [];
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                const month = date.getMonth();
+                const year = date.getFullYear();
+
+                const count = allCompletions.filter(d => {
+                    const compDate = parseDate(d);
+                    return compDate.getMonth() === month && compDate.getFullYear() === year;
+                }).length;
+
+                monthCounts.push({
+                    label: MONTHS[month],
+                    count: count
+                });
+            }
+
+            const maxCount = Math.max(...monthCounts.map(m => m.count), 1);
+
+            monthCounts.forEach((m, index) => {
+                const bar = document.createElement('div');
+                bar.className = 'month-bar';
+                bar.innerHTML = `
+            <span class="month-bar-value">${m.count}</span>
+            <div class="month-bar-fill" style="height: 0%"></div>
+            <span class="month-bar-label">${m.label}</span>
+        `;
+                chart.appendChild(bar);
+
+                // Animate bars after a delay
+                setTimeout(() => {
+                    const fill = bar.querySelector('.month-bar-fill');
+                    fill.style.height = (m.count / maxCount * 100) + '%';
+                }, 100 + (index * 100));
+            });
+        }
+
+        function renderHabitBreakdown() {
+            const breakdown = $('habit-breakdown');
+            breakdown.innerHTML = '';
+
+            if (state.habits.length === 0) {
+                breakdown.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No habits yet. Add some habits to see your breakdown!</p>';
+                return;
+            }
+
+            const maxCompletions = Math.max(...state.habits.map(h => Object.keys(h.completedDates).length), 1);
+
+            state.habits.forEach((h, index) => {
+                const count = Object.keys(h.completedDates).length;
+                const percent = (count / maxCompletions * 100);
+
+                const row = document.createElement('div');
+                row.className = 'habit-stat-row';
+                row.innerHTML = `
+            <span class="habit-stat-name">${h.name}</span>
+            <div class="habit-stat-bar-container">
+                <div class="habit-stat-bar" style="width: 0%"></div>
+            </div>
+            <span class="habit-stat-value">${count}</span>
+        `;
+                breakdown.appendChild(row);
+
+                // Animate bars after a delay
+                setTimeout(() => {
+                    const bar = row.querySelector('.habit-stat-bar');
+                    bar.style.width = percent + '%';
+                }, 100 + (index * 150));
+            });
+        }
 
         // ============ EVENT LISTENERS ============
         $('add-habit-btn').onclick = openAddModal;
@@ -632,10 +813,12 @@ document.addEventListener('DOMContentLoaded', function () {
             await sb.auth.signOut();
             window.location.href = 'login.html';
         };
+        // Stats
+        $('stats-btn').onclick = openStatsView;
+        $('stats-back-btn').onclick = closeStatsView;
 
         // ============ INITIALIZE ============
         loadHabits();
-        displayWelcome();
     }
 
 });
