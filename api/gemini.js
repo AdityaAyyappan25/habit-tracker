@@ -58,7 +58,8 @@ Generate only the message. Maximum 8 words.`;
 
         if (!response.ok) {
             console.error('Gemini API error:', JSON.stringify(data));
-            return res.status(500).json({ error: 'Gemini API error' });
+            // Return fallback message instead of error
+            return res.status(200).json({ message: null });
         }
 
         let message = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
