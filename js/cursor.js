@@ -1,107 +1,93 @@
-// Flame Lamp Cursor with Trail
+// Spark Cursor with Trail
 (function () {
-    const flame = document.querySelector('.cursor-flame');
+    const spark = document.querySelector('.cursor-spark');
     const glow = document.querySelector('.cursor-glow');
 
-    if (!flame || !glow) return;
+    if (!spark || !glow) return;
 
     let mouseX = 0, mouseY = 0;
-    let flameX = 0, flameY = 0;
-    let glowX = 0, glowY = 0;
+    let sparkX = 0, sparkY = 0;
     let lastTrailTime = 0;
-    const trailDelay = 30; // ms between trail particles
+    const trailDelay = 50;
 
-    // Track mouse position
     document.addEventListener('mousemove', (e) => {
         mouseX = e.clientX;
         mouseY = e.clientY;
 
-        // Create trail particles
+        // Create trail
         const now = Date.now();
         if (now - lastTrailTime > trailDelay) {
-            createTrailParticle(mouseX, mouseY);
+            createTrail(mouseX, mouseY);
             lastTrailTime = now;
         }
     });
 
-    // Smooth animation for flame and glow
     function animate() {
-        // Flame follows quickly
-        flameX += (mouseX - flameX) * 0.3;
-        flameY += (mouseY - flameY) * 0.3;
-        flame.style.left = flameX + 'px';
-        flame.style.top = flameY + 'px';
+        // Smooth follow
+        sparkX += (mouseX - sparkX) * 0.2;
+        sparkY += (mouseY - sparkY) * 0.2;
 
-        // Glow follows slower for smooth effect
-        glowX += (mouseX - glowX) * 0.15;
-        glowY += (mouseY - glowY) * 0.15;
-        glow.style.left = glowX + 'px';
-        glow.style.top = glowY + 'px';
+        spark.style.left = sparkX + 'px';
+        spark.style.top = sparkY + 'px';
+        glow.style.left = sparkX + 'px';
+        glow.style.top = sparkY + 'px';
 
         requestAnimationFrame(animate);
     }
     animate();
 
-    // Create trail particle
-    function createTrailParticle(x, y) {
+    function createTrail(x, y) {
         const particle = document.createElement('div');
         particle.className = 'trail-particle';
 
-        // Random size for variety
-        const size = Math.random() * 6 + 4;
+        const size = Math.random() * 4 + 2;
         particle.style.width = size + 'px';
         particle.style.height = size + 'px';
-
-        // Slight random offset
-        const offsetX = (Math.random() - 0.5) * 10;
-        const offsetY = (Math.random() - 0.5) * 10;
-        particle.style.left = (x + offsetX) + 'px';
-        particle.style.top = (y + offsetY) + 'px';
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
 
         document.body.appendChild(particle);
 
-        // Remove after animation
-        setTimeout(() => {
-            particle.remove();
-        }, 800);
+        setTimeout(() => particle.remove(), 600);
     }
 
-    // Hover effect on interactive elements
+    // Hover
     document.addEventListener('mouseover', (e) => {
         if (e.target.matches('button, input, select, a, .day:not(.disabled), .habit-name, .stat-card, .action-btn, .view-btn, .add-btn, .modal-btn, .drag-handle')) {
-            flame.classList.add('hover');
+            spark.classList.add('hover');
             glow.classList.add('hover');
         }
     });
 
     document.addEventListener('mouseout', (e) => {
         if (e.target.matches('button, input, select, a, .day:not(.disabled), .habit-name, .stat-card, .action-btn, .view-btn, .add-btn, .modal-btn, .drag-handle')) {
-            flame.classList.remove('hover');
+            spark.classList.remove('hover');
             glow.classList.remove('hover');
         }
     });
 
-    // Click effect
+    // Click
     document.addEventListener('mousedown', () => {
-        flame.classList.add('click');
-        // Burst of particles on click
-        for (let i = 0; i < 5; i++) {
-            setTimeout(() => createTrailParticle(mouseX, mouseY), i * 20);
+        spark.classList.add('click');
+        glow.classList.add('click');
+        for (let i = 0; i < 4; i++) {
+            setTimeout(() => createTrail(mouseX, mouseY), i * 30);
         }
     });
 
     document.addEventListener('mouseup', () => {
-        flame.classList.remove('click');
+        spark.classList.remove('click');
+        glow.classList.remove('click');
     });
 
-    // Hide when leaving window
+    // Hide when leaving
     document.addEventListener('mouseleave', () => {
-        flame.style.opacity = '0';
+        spark.style.opacity = '0';
         glow.style.opacity = '0';
     });
 
     document.addEventListener('mouseenter', () => {
-        flame.style.opacity = '1';
+        spark.style.opacity = '1';
         glow.style.opacity = '1';
     });
 })();
