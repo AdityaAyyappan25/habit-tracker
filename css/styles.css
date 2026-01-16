@@ -1744,3 +1744,367 @@ body {
 .checkbox-option span {
     font-size: 16px;
 }
+
+/* ================================================
+   MOBILE RESPONSIVE STYLES
+   ================================================ */
+
+/* Tablets and below (768px) */
+@media (max-width: 768px) {
+    body {
+        padding: 20px;
+    }
+
+    /* Dashboard header - stack on mobile */
+    .dashboard-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .header-buttons {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .app-title {
+        font-size: 24px;
+    }
+
+    /* Welcome message */
+    .welcome-message {
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    /* Habit card */
+    .habit-card {
+        padding: 20px;
+        padding-left: 32px;
+    }
+
+    .habit-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .habit-header-right {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .habit-name {
+        font-size: 18px;
+    }
+
+    .habit-stats {
+        font-size: 14px;
+        flex-wrap: wrap;
+    }
+
+    /* Days grid - smaller circles */
+    .days-grid {
+        grid-template-columns: repeat(7, minmax(32px, 45px));
+        gap: 6px;
+    }
+
+    .day {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+
+    /* Year view */
+    .year-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+        padding: 16px;
+        overflow-x: auto;
+    }
+
+    .year-grid .day {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+
+    .year-title-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .year-habit-name {
+        font-size: 24px;
+    }
+
+    .year-habit-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Stats */
+    .stats-overview {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-value {
+        font-size: 32px;
+    }
+
+    .habit-stat-name {
+        width: 100px;
+    }
+
+    /* Modal */
+    .modal-content {
+        padding: 24px;
+        margin: 16px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    /* Habit type toggle in modal */
+    .habit-type-toggle {
+        flex-direction: column;
+    }
+}
+
+/* Mobile phones (480px and below) */
+@media (max-width: 480px) {
+    body {
+        padding: 12px;
+    }
+
+    .app-title {
+        font-size: 20px;
+    }
+
+    .header-buttons {
+        gap: 8px;
+    }
+
+    .view-btn,
+    .add-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        min-width: auto;
+    }
+
+    /* Habit card */
+    .habit-card {
+        padding: 16px;
+        padding-left: 28px;
+    }
+
+    .drag-handle {
+        left: 6px;
+        font-size: 14px;
+    }
+
+    .habit-name {
+        font-size: 16px;
+    }
+
+    .habit-goal-desc {
+        font-size: 12px;
+    }
+
+    .habit-stats {
+        font-size: 12px;
+    }
+
+    .habit-header-right {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .view-year-btn {
+        width: 100%;
+    }
+
+    .habit-actions {
+        width: 100%;
+    }
+
+    .action-btn {
+        flex: 1;
+        padding: 8px 12px;
+        font-size: 12px;
+        min-width: auto;
+    }
+
+    /* Days grid - even smaller */
+    .days-grid {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+    }
+
+    .day {
+        width: 28px;
+        height: 28px;
+        font-size: 10px;
+    }
+
+    /* Counter section */
+    .counter-section {
+        padding: 12px;
+        min-width: auto;
+    }
+
+    .mini-gauge-container {
+        width: 80px;
+        height: 80px;
+    }
+
+    .mini-gauge-count {
+        font-size: 18px;
+    }
+
+    .mini-gauge-target {
+        font-size: 10px;
+    }
+
+    .counter-section .counter-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    .counter-reset-info {
+        font-size: 10px;
+    }
+
+    /* Year view - scroll horizontally */
+    .year-grid {
+        grid-template-columns: repeat(4, 1fr);
+        padding: 12px;
+    }
+
+    .month-label {
+        font-size: 10px;
+    }
+
+    .year-habit-name {
+        font-size: 20px;
+    }
+
+    #year-display {
+        font-size: 22px;
+    }
+
+    .arrow-btn {
+        font-size: 24px;
+        padding: 0 8px;
+    }
+
+    /* Stats */
+    .stats-overview {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .stats-title {
+        font-size: 20px;
+    }
+
+    .section-title {
+        font-size: 16px;
+    }
+
+    .month-bar {
+        min-width: 30px;
+    }
+
+    .month-bar-label {
+        font-size: 10px;
+    }
+
+    .month-bar-value {
+        font-size: 11px;
+    }
+
+    .habit-stat-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .habit-stat-name {
+        width: 100%;
+    }
+
+    .habit-stat-bar-container {
+        width: 100%;
+    }
+
+    /* Modal adjustments */
+    .modal-content {
+        padding: 20px;
+        width: 95%;
+    }
+
+    .modal-content h2 {
+        font-size: 18px;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+    }
+
+    .modal-btn {
+        width: 100%;
+    }
+
+    /* Welcome message */
+    .welcome-message {
+        font-size: 14px;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+}
+
+/* Extra small phones (360px and below) */
+@media (max-width: 360px) {
+    .days-grid {
+        gap: 3px;
+    }
+
+    .day {
+        width: 24px;
+        height: 24px;
+        font-size: 9px;
+    }
+
+    .year-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    .day {
+        min-width: 36px;
+        min-height: 36px;
+    }
+
+    .action-btn,
+    .view-btn,
+    .add-btn,
+    .modal-btn {
+        min-height: 44px;
+    }
+
+    .counter-section .counter-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
