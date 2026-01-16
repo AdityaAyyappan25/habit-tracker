@@ -1191,3 +1191,556 @@ body {
     cursor: grabbing;
     color: #f5d547;
 }
+
+/* ============ HABIT TYPE TOGGLE ============ */
+.habit-type-toggle {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.toggle-option {
+    flex: 1;
+    padding: 16px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.toggle-option:hover {
+    border-color: #e8b923;
+}
+
+.toggle-option input[type="radio"] {
+    display: none;
+}
+
+.toggle-option input[type="radio"]:checked+.toggle-label {
+    color: #e8b923;
+}
+
+.toggle-option input[type="radio"]:checked~.toggle-desc {
+    color: #888;
+}
+
+.toggle-option:has(input:checked) {
+    border-color: #e8b923;
+    background: rgba(232, 185, 35, 0.1);
+}
+
+.toggle-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #888;
+    transition: color 0.2s;
+}
+
+.toggle-desc {
+    font-size: 12px;
+    color: #555;
+}
+
+.counter-options {
+    margin-bottom: 20px;
+}
+
+.counter-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #0a0a0a;
+    color: #f5f5f5;
+    font-family: inherit;
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.counter-input:focus {
+    outline: none;
+    border-color: #e8b923;
+}
+
+.reset-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ============ COUNTER CARD ============ */
+.counter-card {
+    background-color: #141414;
+    border-radius: 12px;
+    padding: 32px;
+    width: 100%;
+    position: relative;
+    padding-left: 40px;
+}
+
+.counter-card.completed {
+    box-shadow: 0 0 30px rgba(232, 185, 35, 0.3);
+}
+
+.counter-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Circular Gauge */
+.gauge-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+}
+
+.gauge-bg {
+    fill: none;
+    stroke: #2a2a2a;
+    stroke-width: 12;
+}
+
+.gauge-progress {
+    fill: none;
+    stroke: url(#gaugeGradient);
+    stroke-width: 12;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 0.5s ease;
+    filter: drop-shadow(0 0 8px rgba(232, 185, 35, 0.5));
+}
+
+.gauge-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.gauge-count {
+    font-size: 42px;
+    font-weight: 700;
+    color: #e8b923;
+    text-shadow: 0 0 15px rgba(232, 185, 35, 0.5);
+    line-height: 1;
+}
+
+.gauge-target {
+    font-size: 14px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Counter Digits */
+.counter-digits {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.digit-box {
+    width: 50px;
+    height: 70px;
+    background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 50%, #1a1a1a 100%);
+    border: 1px solid #333;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 36px;
+    font-weight: 700;
+    color: #e8b923;
+    text-shadow: 0 0 10px rgba(232, 185, 35, 0.5);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    position: relative;
+}
+
+.digit-box::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #333;
+}
+
+.digit-box.flipping {
+    animation: digitFlip 0.3s ease-out;
+}
+
+@keyframes digitFlip {
+    0% {
+        transform: rotateX(0deg);
+    }
+
+    50% {
+        transform: rotateX(-90deg);
+    }
+
+    100% {
+        transform: rotateX(0deg);
+    }
+}
+
+/* Counter Buttons */
+.counter-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.counter-btn {
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-family: 'Crimson Text', serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.click-btn {
+    background: linear-gradient(145deg, #e8b923, #c9920c);
+    border: none;
+    color: #0a0a0a;
+    box-shadow: 0 4px 15px rgba(232, 185, 35, 0.3);
+}
+
+.click-btn:hover {
+    background: linear-gradient(145deg, #f5d547, #e8b923);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(232, 185, 35, 0.4);
+}
+
+.click-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 10px rgba(232, 185, 35, 0.3);
+}
+
+.click-btn.completed {
+    background: linear-gradient(145deg, #555, #444);
+    color: #888;
+    cursor: default;
+}
+
+.reset-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #666;
+    padding: 12px 20px;
+}
+
+.reset-btn:hover {
+    border-color: #e8b923;
+    color: #e8b923;
+}
+
+/* Counter Info */
+.counter-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #555;
+    margin-top: 8px;
+}
+
+.counter-info .auto-reset {
+    color: #e8b923;
+}
+
+/* Completion Badge */
+.completion-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: linear-gradient(145deg, #e8b923, #c9920c);
+    color: #0a0a0a;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 0 15px rgba(232, 185, 35, 0.5);
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 15px rgba(232, 185, 35, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(232, 185, 35, 0.8);
+    }
+}
+
+/* Gauge glow on completion */
+.gauge-progress.complete {
+    filter: drop-shadow(0 0 15px rgba(232, 185, 35, 0.8));
+}
+
+/* ============ UNIFIED HABIT CARD WITH COUNTER ============ */
+
+.habit-body {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.habit-body .days-grid {
+    flex: 1;
+}
+
+/* Counter Section (right side) */
+.counter-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 1px solid #222;
+    position: relative;
+    min-width: 140px;
+}
+
+.counter-complete-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(145deg, #e8b923, #c9920c);
+    color: #0a0a0a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(232, 185, 35, 0.5);
+}
+
+/* Mini Gauge */
+.mini-gauge-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.mini-gauge-container svg {
+    transform: rotate(-90deg);
+}
+
+.mini-gauge-container .gauge-bg {
+    fill: none;
+    stroke: #2a2a2a;
+    stroke-width: 8;
+}
+
+.mini-gauge-container .gauge-progress {
+    fill: none;
+    stroke: #e8b923;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+    filter: drop-shadow(0 0 6px rgba(232, 185, 35, 0.5));
+    animation: gaugeGlow 2s ease-in-out infinite;
+}
+
+@keyframes gaugeGlow {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 6px rgba(232, 185, 35, 0.5));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 12px rgba(232, 185, 35, 0.8));
+    }
+}
+
+.mini-gauge-container .gauge-progress.complete {
+    filter: drop-shadow(0 0 15px rgba(232, 185, 35, 0.9));
+    animation: gaugeGlowComplete 1.5s ease-in-out infinite;
+}
+
+@keyframes gaugeGlowComplete {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 15px rgba(232, 185, 35, 0.9));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 25px rgba(232, 185, 35, 1));
+    }
+}
+
+.mini-gauge-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.mini-gauge-count {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    color: #e8b923;
+    text-shadow: 0 0 10px rgba(232, 185, 35, 0.5);
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.mini-gauge-count.flip {
+    animation: countFlip 0.3s ease-out;
+}
+
+@keyframes countFlip {
+    0% {
+        transform: perspective(200px) rotateX(0deg);
+        opacity: 1;
+    }
+
+    50% {
+        transform: perspective(200px) rotateX(-90deg);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: perspective(200px) rotateX(0deg);
+        opacity: 1;
+    }
+}
+
+.mini-gauge-target {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+/* Counter Controls */
+.counter-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.counter-section .counter-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.counter-section .click-btn {
+    background: linear-gradient(145deg, #e8b923, #c9920c);
+    border: none;
+    color: #0a0a0a;
+    box-shadow: 0 2px 8px rgba(232, 185, 35, 0.3);
+}
+
+.counter-section .click-btn:hover {
+    background: linear-gradient(145deg, #f5d547, #e8b923);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(232, 185, 35, 0.4);
+}
+
+.counter-section .click-btn:active {
+    transform: translateY(1px);
+}
+
+.counter-section .click-btn.completed {
+    background: linear-gradient(145deg, #333, #222);
+    color: #666;
+    cursor: default;
+    box-shadow: none;
+}
+
+.counter-section .click-btn.completed:hover {
+    transform: none;
+}
+
+.counter-section .reset-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #666;
+}
+
+.counter-section .reset-btn:hover {
+    border-color: #e8b923;
+    color: #e8b923;
+}
+
+.counter-reset-info {
+    font-size: 11px;
+    color: #555;
+}
+
+/* Responsive - stack on mobile */
+@media (max-width: 600px) {
+    .habit-body {
+        flex-direction: column;
+    }
+
+    .counter-section {
+        width: 100%;
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .mini-gauge-container {
+        width: 100px;
+        height: 100px;
+    }
+
+    .mini-gauge-count {
+        font-size: 22px;
+    }
+}
+
+/* ============ COUNTER TOGGLE IN EDIT MODAL ============ */
+.counter-toggle {
+    margin-bottom: 16px;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: #f5f5f5;
+}
+
+.checkbox-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #e8b923;
+    cursor: pointer;
+}
+
+.checkbox-option span {
+    font-size: 16px;
+}
