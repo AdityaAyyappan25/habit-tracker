@@ -105,9 +105,22 @@ body {
 
 .year-title-row {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     width: 100%;
+    position: relative;
+}
+
+/* Position back button on the left */
+.year-title-row>.view-btn:first-child {
+    position: absolute;
+    left: 0;
+}
+
+/* Position edit/delete buttons on the right */
+.year-habit-actions {
+    position: absolute;
+    right: 0;
 }
 
 .year-habit-info {
