@@ -683,6 +683,7 @@ document.addEventListener('DOMContentLoaded', function () {
             $('dashboard-view').classList.add('hidden');
             $('year-view').classList.remove('hidden');
             renderYearView();
+            updateYearNavigationButtons();
         }
 
         function renderYearView() {
@@ -697,12 +698,15 @@ document.addEventListener('DOMContentLoaded', function () {
             grid.innerHTML = '';
             const today = getToday();
 
+            // Always render full year grid (all 12 months, all days)
             for (let month = 0; month < 12; month++) {
                 const col = document.createElement('div');
                 col.className = 'month-column';
                 col.innerHTML = `<div class="month-label">${MONTHS[month]}</div>`;
 
                 const daysInMonth = new Date(state.currentViewingYear, month + 1, 0).getDate();
+
+                // Render all days in the month
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dayEl = document.createElement('div');
                     dayEl.className = 'day';
@@ -710,6 +714,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     const dateStr = formatDate(state.currentViewingYear, month, day);
 
                     if (habit.completedDates[dateStr]) dayEl.classList.add('lit');
+
+                    // Disable future dates
                     if (isFutureDate(state.currentViewingYear, month, day)) {
                         dayEl.classList.add('disabled');
                     } else {
@@ -719,11 +725,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             playSound();
                         };
                     }
+
                     col.appendChild(dayEl);
                 }
                 grid.appendChild(col);
             }
         }
+
 
         // ================================================
         // 7. MODAL FUNCTIONS
@@ -1216,8 +1224,34 @@ document.addEventListener('DOMContentLoaded', function () {
             $('dashboard-view').classList.remove('hidden');
             renderDashboard();
         };
-        $('prev-year-btn').onclick = () => { state.currentViewingYear--; renderYearView(); };
-        $('next-year-btn').onclick = () => { state.currentViewingYear++; renderYearView(); };
+        $('prev-year-btn').onclick = () => {
+            state.currentViewingYear--;
+            renderYearView();
+            updateYearNavigationButtons();
+        };
+
+        $('next-year-btn').onclick = () => {
+            const currentYear = new Date().getFullYear();
+            if (state.currentViewingYear < currentYear) {
+                state.currentViewingYear++;
+                renderYearView();
+                updateYearNavigationButtons();
+            }
+        };
+
+        // Helper function to update button states
+        function updateYearNavigationButtons() {
+            const currentYear = new Date().getFullYear();
+            const nextBtn = $('next-year-btn');
+
+            if (state.currentViewingYear >= currentYear) {
+                nextBtn.style.opacity = '0.3';
+                nextBtn.style.cursor = 'not-allowed';
+            } else {
+                nextBtn.style.opacity = '1';
+                nextBtn.style.cursor = 'pointer';
+            }
+        }
         $('year-edit-btn').onclick = () => openEditModal(state.currentHabitId);
         $('year-delete-btn').onclick = () => openDeleteModal(state.currentHabitId);
 

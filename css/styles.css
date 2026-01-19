@@ -1857,8 +1857,24 @@ body {
     }
 
     .year-title-row {
-        flex-direction: column;
-        gap: 12px;
+        flex-direction: column !important;
+        gap: 12px !important;
+        align-items: stretch !important;
+    }
+
+    /* Remove absolute positioning on mobile */
+    .year-title-row>.view-btn:first-child,
+    #back-btn {
+        position: static !important;
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Center habit name at top */
+    .year-habit-info {
+        order: -1;
+        /* Move to top */
+        width: 100%;
     }
 
     .year-habit-name {
@@ -1866,6 +1882,7 @@ body {
     }
 
     .year-habit-actions {
+        position: static !important;
         width: 100%;
         justify-content: center;
     }
@@ -1901,6 +1918,37 @@ body {
 @media (max-width: 480px) {
     body {
         padding: 12px;
+    }
+
+    /* Year view header - extra compact */
+    .year-habit-name {
+        font-size: 20px;
+    }
+
+    .year-habit-actions {
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        flex: 1;
+        min-width: 80px;
+    }
+
+    /* Year grid - 3 columns on small phones */
+    .year-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        padding: 12px;
+    }
+
+    .year-grid .day {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+    }
+
+    .month-label {
+        font-size: 9px;
     }
 
     /* Remove max-width constraint on mobile */
